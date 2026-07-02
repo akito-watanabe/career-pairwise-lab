@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#17261f">
-  <title>キャリア比較ラボ v1.0.1</title>
+  <title>キャリア比較ラボ v1.0.2</title>
   <style>
   :root {
     --ink: #17261f;
@@ -1289,7 +1289,7 @@
     standard: {
       id: "standard",
       label: "標準版",
-      estimatedMinutes: "10〜15分",
+      estimatedMinutes: "12〜15分",
       description: "4択比較を中心に、広い候補を順位づけする",
       targetAnswers: 32,
       maxAnswers: 36,
@@ -2435,7 +2435,7 @@
   function home() {
     progress(0);
     screen(
-      `<div class="hero"><div class="eyebrow">CAREER PAIRWISE LAB · v1.0.1</div><h1>自分でも気づいていない、<br>働き方の傾向を探ろう。</h1><p class="lead">4択比較や2択トレードオフに答えるだけで、<br>自分の判断軸が見えてくる探索ツールです。<br>結果は正解ではなく、次に調べる仮説として使ってください。</p><div class="mode-grid"><div class="mode-card"><span class="time-badge">⏱ 10〜12分</span><h3>標準版</h3><p>まず傾向と可能性マップを見る</p><button class="btn primary" data-mode-start="standard">標準版で始める</button></div><div class="mode-card"><span class="time-badge">⏱ 20〜30分</span><h3>がっつり版</h3><p>迷い・接戦・価値観まで深く見る</p><button class="btn primary" data-mode-start="deep">がっつり版で始める</button></div></div><p class="note">個人情報は入力しません。回答は端末内だけに保存され、外部へ送信されません。</p></div>`
+      `<div class="hero"><div class="eyebrow">CAREER PAIRWISE LAB · v1.0.2</div><h1>自分でも気づいていない、<br>働き方の傾向を探ろう。</h1><p class="lead">4択比較や2択トレードオフに答えるだけで、<br>自分の判断軸が見えてくる探索ツールです。<br>結果は正解ではなく、次に調べる仮説として使ってください。</p><div class="mode-grid"><div class="mode-card"><span class="time-badge">⏱ 12〜15分</span><h3>標準版</h3><p>まず傾向と可能性マップを見る</p><button class="btn primary" data-mode-start="standard">標準版で始める</button></div><div class="mode-card"><span class="time-badge">⏱ 25〜35分</span><h3>がっつり版</h3><p>迷い・接戦・価値観まで深く見る</p><button class="btn primary" data-mode-start="deep">がっつり版で始める</button></div></div><p class="note">個人情報は入力しません。回答は端末内だけに保存され、外部へ送信されません。</p></div>`
     );
     root.querySelectorAll("[data-mode-start]").forEach(
       (b) =>
@@ -2581,10 +2581,9 @@
           })
       );
       $("#openWide").onclick = () => {
-        industryChosen.clear();
-        roleChosen.clear();
-        strength = "broad";
-        render();
+        S.explorationFilters = { industryIds: [], roleIds: [], strength: "broad" };
+        S.navigationStack.push({ screen: "explorationFilters" });
+        transition(phases()[0]);
       };
       $("#explorationNext").onclick = () => {
         S.explorationFilters = {
@@ -2601,7 +2600,7 @@
     function render() {
       progress(0.12);
       screen(
-        `<div class="eyebrow">STEP 3 / 探索範囲を選ぶ</div><h2>探索範囲を選ぶ</h2><p class="lead">気になる業界・業種や職種があれば、ここで指定できます。<br>選んだ領域を少し多めに出しつつ、他の可能性も混ぜて比較します。<br>まだ決まっていない場合は「広く見たい」を選んでください。</p><button class="btn ghost" id="openWide" style="width:100%;margin-bottom:18px">まだ広く見たい（絞らずに広めに比較する）</button><details class="panel" id="industryPanel"><summary>業界・業種を選ぶ（最大5つ）</summary><p class="note">気になる業界があれば最大5つまで選べます。</p><div class="checks">${INDUSTRY_FILTERS.map((x) => renderCheck(x, industryChosen, "industry")).join("")}</div></details><details class="panel" id="rolePanel"><summary>職種を選ぶ（最大5つ）</summary><p class="note">気になる仕事の種類があれば最大5つまで選べます。</p><div class="checks">${ROLE_FILTERS.map((x) => renderCheck(x, roleChosen, "role")).join("")}</div></details><div class="panel"><h3>探索の広さ</h3><p class="note">広め / バランス / 強め から選べます。</p><div class="or" id="strengthPicker">${FILTER_STRENGTH_OPTIONS.map((x) => `<button data-strength="${x.id}" class="${strength === x.id ? "chosen" : ""}">${esc(x.label)}</button>`).join("")}</div><p class="note" id="strengthDesc">${esc(FILTER_STRENGTH_OPTIONS.find((x) => x.id === strength)?.description || "")}</p></div>${summaryHtml()}<button class="btn primary" id="explorationNext">この設定で進む</button><div class="navrow"><button class="link" id="back">← 希望キャリア形態へ</button><button class="link" id="reset">最初から</button></div>`
+        `<div class="eyebrow">STEP 3 / 探索範囲を選ぶ</div><h2>探索範囲を選ぶ</h2><p class="lead">気になる業界・業種や職種があれば、ここで指定できます。<br>選んだ領域を少し多めに出しつつ、他の可能性も混ぜて比較します。<br>まだ決まっていない場合は「広く見たい」を選んでください。</p><button class="btn ghost" id="openWide" style="width:100%;margin-bottom:18px">まだ広く見たい（絞らずにこのまま始める）</button><details class="panel" id="industryPanel"><summary>業界・業種を選ぶ（最大5つ）</summary><p class="note">気になる業界があれば最大5つまで選べます。</p><div class="checks">${INDUSTRY_FILTERS.map((x) => renderCheck(x, industryChosen, "industry")).join("")}</div></details><details class="panel" id="rolePanel"><summary>職種を選ぶ（最大5つ）</summary><p class="note">気になる仕事の種類があれば最大5つまで選べます。</p><div class="checks">${ROLE_FILTERS.map((x) => renderCheck(x, roleChosen, "role")).join("")}</div></details><div class="panel"><h3>探索の広さ</h3><p class="note">広め / バランス / 強め から選べます。</p><div class="or" id="strengthPicker">${FILTER_STRENGTH_OPTIONS.map((x) => `<button data-strength="${x.id}" class="${strength === x.id ? "chosen" : ""}">${esc(x.label)}</button>`).join("")}</div><p class="note" id="strengthDesc">${esc(FILTER_STRENGTH_OPTIONS.find((x) => x.id === strength)?.description || "")}</p></div>${summaryHtml()}<button class="btn primary" id="explorationNext">この設定で進む</button><div class="navrow"><button class="link" id="back">← 希望キャリア形態へ</button><button class="link" id="reset">最初から</button></div>`
       );
       bindEvents();
     }
@@ -3072,7 +3071,7 @@
       removeLastMatching(S.maxDiffLogs, (x) => x.question_id === entry.payload.question_id);
     else if (entry.type === "reflection")
       removeLastMatching(S.reflectionAnswers, (x) => x.id === entry.payload.id);
-    else if (entry.type === "avoid") S.avoid = [];
+    else if (entry.type === "avoid") S.avoid = [...(entry.payload.selected || [])];
     recalculateAllScores();
     S.phase = entry.phase;
     S.index = entry.index;
@@ -3098,80 +3097,6 @@
   }
   function styleOption(id, label, description, trait_weights) {
     return { id, label, description, trait_weights, layer: "workStyle" };
-  }
-  function workStylePairs() {
-    let get = (id) => D.style.find((x) => x.id === id),
-      field = styleOption("field_move", "現場で動く", "店舗・地域・現場で直接動く", {
-        field_work: 0.9,
-        customer_contact: 0.5
-      }),
-      system = styleOption("system_design", "仕組みを設計", "構造やルールを考えて整える", {
-        structure_design: 0.9,
-        analysis: 0.5
-      }),
-      customer = styleOption("customer_talk", "顧客と話す", "相手と直接話して課題をつかむ", {
-        customer_contact: 0.9,
-        communication: 0.8
-      }),
-      behind = styleOption("behind_support_style", "裏側で支える", "運用や準備を通じて支える", {
-        operation_support: 0.9,
-        team_support: 0.7
-      }),
-      numbers = styleOption("numbers_view", "数字で見る", "データや事実から判断する", {
-        analysis: 0.9
-      }),
-      sensory = styleOption("sensory_create", "感性で作る", "直感や表現を形にする", {
-        creativity: 0.9,
-        hands_on_creation: 0.7
-      }),
-      team = styleOption("support_team", "チームを支える", "周囲が動きやすい状態を作る", {
-        team_support: 0.9,
-        communication: 0.6
-      }),
-      own = styleOption("own_result", "自分の成果を出す", "自分の責任と裁量で成果を作る", {
-        autonomy: 0.9,
-        business_building: 0.6
-      });
-    return [
-      [get("fast_trial"), get("deep_plan"), "workStyle"],
-      [get("team_talk"), get("solo_focus"), "workStyle"],
-      [get("stable_operation"), get("zero_to_one"), "workStyle"],
-      [get("deep_specialty"), get("wide_range"), "workStyle"],
-      [field, system, "workStyle"],
-      [customer, behind, "workStyle"],
-      [numbers, sensory, "workStyle"],
-      [team, own, "workStyle"]
-    ];
-  }
-  function contrastPairs() {
-    let ranked = ranking("career"),
-      pool = careerPool(),
-      get = (id) => pool.find((x) => x.id === id),
-      top = ranked
-        .slice(0, 6)
-        .map((x) => get(x.id))
-        .filter(Boolean),
-      q = [];
-    for (let i = 0; i < Math.min(3, top.length - 1); i++) q.push([top[i], top[i + 1], "close"]);
-    for (let i = 0; i < Math.min(3, top.length); i++) {
-      let opposite = [...pool]
-        .filter((x) => x.domain !== top[i].domain && !q.some((p) => p.includes(x)))
-        .sort((a, b) => traitAffinity(b) - traitAffinity(a))[0];
-      if (opposite) q.push([top[i], opposite, "counterexample"]);
-    }
-    return q.slice(0, TIME_BUDGET_CONFIG.maxQuestionsPerSection.contrast);
-  }
-  function tiebreakPairs() {
-    let pool = careerPool(),
-      get = (id) => pool.find((x) => x.id === id),
-      top = ranking("career")
-        .slice(0, 3)
-        .map((x) => get(x.id))
-        .filter(Boolean),
-      q = [];
-    for (let i = 0; i < top.length; i++)
-      for (let j = i + 1; j < top.length; j++) q.push([top[i], top[j], "tiebreak"]);
-    return q.slice(0, TIME_BUDGET_CONFIG.maxQuestionsPerSection.tiebreak);
   }
   function pairKey(a, b) {
     return [a, b].sort().join("|");
@@ -3364,7 +3289,7 @@
     function render() {
       progress();
       screen(
-        `<div class="eyebrow">${activeConfig().label} · ${names[S.phase]} ${S.index + 1} / ${S.queue.length}</div><h2>4つの中から選んでください</h2><p class="lead">4つの中から、今いちばん気になるものと、今はいちばん違うと感じるものを選んでください。<br>選んだ後でも、次へ進む前なら変更できます。</p><div class="md-status"><span class="md-status-item"></span><span class="md-status-item"></span></div><div class="maxdiff-grid">${set.map((x) => `<div class="maxdiff-item" data-id="${x.id}"><b>${x.label}</b><span class="candidate-desc">${x.desc || x.description}</span><div class="md-actions"><button class="md-btn best" data-role="best" data-id="${x.id}">一番気になる ★</button><button class="md-btn worst" data-role="worst" data-id="${x.id}">今は違う ✕</button></div></div>`).join("")}</div><p class="note md-warning"></p><div class="md-sticky"><button class="btn primary" id="mdDone">次へ</button><button class="btn ghost" id="back" style="width:100%;margin-top:10px">戻る</button></div>`
+        `<div class="eyebrow">${activeConfig().label} · ${names[S.phase]} ${S.index + 1} / ${S.queue.length}</div><h2>4つの中から選んでください</h2><p class="lead">4つの中から、今いちばん気になるものと、今はいちばん違うと感じるものを選んでください。<br>選んだ後でも、次へ進む前なら変更できます。</p><div class="md-status"><span class="md-status-item"></span><span class="md-status-item"></span></div><div class="maxdiff-grid">${set.map((x) => `<div class="maxdiff-item" data-id="${x.id}"><b>${x.label}</b><span class="candidate-desc">${x.desc || x.description}</span><div class="md-actions"><button class="md-btn best" data-role="best" data-id="${x.id}">一番気になる ★</button><button class="md-btn worst" data-role="worst" data-id="${x.id}">今は違う ✕</button></div></div>`).join("")}</div><p class="note md-warning"></p><div class="md-sticky"><button class="btn primary" id="mdDone">次へ</button><div class="navrow"><button class="link" id="back">← 戻る</button><button class="link" id="mdEarly">途中結果を見る</button></div></div>`
       );
       root.querySelectorAll("[data-role]").forEach(
         (b) =>
@@ -3406,7 +3331,6 @@
             worst_id: worst,
             worst: b.label,
             neutral_ids: neutral.map((x) => x.id),
-            reason: "",
             generated_pairwise_edges: edges,
             candidates: set.map((x) => x.label)
           };
@@ -3420,6 +3344,7 @@
         else finishPhase();
       };
       $("#back").onclick = goBack;
+      $("#mdEarly").onclick = earlyResult;
       update();
     }
     render();
@@ -3644,23 +3569,21 @@
     }
   }
   function answer(ans, a, b, kind) {
-    let reason = "",
-      log = {
-        type: kind,
-        questionKey: `${S.phase}_${S.index}`,
-        phase: S.phase,
-        aId: a.id,
-        bId: b.id,
-        a: a.label,
-        b: b.label,
-        aDescription: a.description,
-        bDescription: b.description,
-        aTraits: a.trait_weights || {},
-        bTraits: b.trait_weights || {},
-        answer: ans,
-        reason,
-        comparisonType: kind
-      };
+    let log = {
+      type: kind,
+      questionKey: `${S.phase}_${S.index}`,
+      phase: S.phase,
+      aId: a.id,
+      bId: b.id,
+      a: a.label,
+      b: b.label,
+      aDescription: a.description,
+      bDescription: b.description,
+      aTraits: a.trait_weights || {},
+      bTraits: b.trait_weights || {},
+      answer: ans,
+      comparisonType: kind
+    };
     S.logs.push(log);
     if (S.phase === "anchor") S.anchorAnswers.push(log);
     if (["pairwise", "closePairwise"].includes(S.phase)) S.pairwiseLogs.push(log);
@@ -3690,9 +3613,6 @@
       S.experienceMode === "deep_continuation" ? "result" : S.mode === "company" ? "avoid" : "risk"
     );
   }
-  function restartPhase(phase) {
-    transition(phase);
-  }
   function headToHead(a, b, p) {
     let wins = {};
     S.logs
@@ -3707,23 +3627,8 @@
       });
     return (wins[a] || 0) === (wins[b] || 0) ? null : (wins[a] || 0) > (wins[b] || 0) ? a : b;
   }
-  function reasonsFor(id, p) {
-    return S.logs
-      .filter(
-        (x) =>
-          bucketFor(x.phase) === bucketFor(p) &&
-          x.reason &&
-          ((x.aId === id && ["a", "both"].includes(x.answer)) ||
-            (x.bId === id && ["b", "both"].includes(x.answer)))
-      )
-      .map((x) => x.reason)
-      .slice(0, 2);
-  }
   function ranking(p) {
-    let stats = Object.values(S.scores[bucketFor(p)] || {}).map((x) => ({
-      ...finalizeStat({ ...x }),
-      mainReasons: reasonsFor(x.id, p)
-    }));
+    let stats = Object.values(S.scores[bucketFor(p)] || {}).map((x) => finalizeStat({ ...x }));
     stats.sort(
       (a, b) =>
         b.displayScore - a.displayScore ||
@@ -3745,14 +3650,6 @@
     let i = phases().indexOf(S.phase);
     if (i < phases().length - 1) transition(phases()[i + 1]);
     else transition("result");
-  }
-  function needsTieBreak(r) {
-    if (r.length < 2) return false;
-    return (
-      r[0].score - r[1].score <= 2 ||
-      (r.length > 2 && r[0].score === r[2].score) ||
-      r.slice(0, 3).some((x) => x.played < 3)
-    );
   }
   function checks(list) {
     let restored = S.editingAnswer?.type === "avoid" ? S.editingAnswer.payload.selected : S.avoid;
@@ -3908,7 +3805,7 @@
       id: String(Date.now()),
       created_at: now,
       updated_at: now,
-      version: "1.0.1",
+      version: "1.0.2",
       mode: S.experienceMode,
       status: completion,
       source_session_id: S.sourceSessionId,
@@ -3963,11 +3860,6 @@
               `${i + 1}. ${x.label}: displayScore ${x.displayScore} / 比較${x.played} / 信頼度${getConfidenceLabel(x.confidence)} / Best ${x.bestCount || 0} / Worst ${x.worstCount || 0}`
           )
           .join("\n"),
-      reasons =
-        (r.comparisonLogs || [])
-          .filter((x) => x.reason)
-          .map((x) => `- ${x.a} / ${x.b}: ${x.reason}`)
-          .join("\n") || "なし",
       reflection =
         (r.reflectionAnswers || [])
           .filter((x) => x.answer)
@@ -3982,7 +3874,7 @@
         .slice(0, TOP_N_DISPLAY)
         .map((x) => x.label)
         .join("、");
-    return `これは${deep ? "がっつり版" : "標準版"}の探索型キャリア比較ログです。${r.mode === "deep_continuation" ? "標準版の回答を引き継いだ追加分析です。" : ""}スコアは確定値ではなく探索用の推定値です。\n\n回答数: ${r.question_count}\ntrait上位: ${insight.topTraits.map((x) => `${x.label} ${x.score}`).join("、")}\n可能性マップ: ${insight.lean}\n総合候補:\n${fmt(insight.overall)}\n会社員寄り:\n${fmt(insight.company)}\n個人活動寄り:\n${fmt(insight.individual)}\n創作・副業寄り:\n${fmt(insight.creative)}\n接戦・迷い: ${insight.closeContests.join(" / ")}\n信頼度が低い候補: ${low}\n未探索: ${insight.unexplored.map((x) => x.label).join("、")}\n今は距離を感じている候補（仮説）: ${insight.avoidLeaning.map((x) => `${x.label}(Worst${x.worstCount || 0}回)`).join("、") || "該当なし"}\nフィットしにくいかもしれない環境（仮説）: ${insight.misfitEnvironments.map((x) => `${x.hint}（関連傾向:${x.label}）`).join("、")}\n避けたい要素: ${(r.avoidFactors || []).join("、") || "未選択"}\n比較理由:\n${reasons}\nトレードオフ回答:\n${tradeoffs}\n内省回答:\n${reflection}\n\n値を断定せず、迷いの構造と反証すべき問いを示してください。信頼度の低い候補から追加で比較すべき組み合わせ、話を聞く相手、小さく試す行動を提案してください。距離を感じている候補や環境についても、決めつけずに仮説として深掘りする問いを含めてください。`;
+    return `これは${deep ? "がっつり版" : "標準版"}の探索型キャリア比較ログです。${r.mode === "deep_continuation" ? "標準版の回答を引き継いだ追加分析です。" : ""}スコアは確定値ではなく探索用の推定値です。\n\n回答数: ${r.question_count}\ntrait上位: ${insight.topTraits.map((x) => `${x.label} ${x.score}`).join("、")}\n可能性マップ: ${insight.lean}\n総合候補:\n${fmt(insight.overall)}\n会社員寄り:\n${fmt(insight.company)}\n個人活動寄り:\n${fmt(insight.individual)}\n創作・副業寄り:\n${fmt(insight.creative)}\n接戦・迷い: ${insight.closeContests.join(" / ")}\n信頼度が低い候補: ${low}\n未探索: ${insight.unexplored.map((x) => x.label).join("、")}\n今は距離を感じている候補（仮説）: ${insight.avoidLeaning.map((x) => `${x.label}(Worst${x.worstCount || 0}回)`).join("、") || "該当なし"}\nフィットしにくいかもしれない環境（仮説）: ${insight.misfitEnvironments.map((x) => `${x.hint}（関連傾向:${x.label}）`).join("、")}\n避けたい要素: ${(r.avoidFactors || []).join("、") || "未選択"}\nトレードオフ回答:\n${tradeoffs}\n内省回答:\n${reflection}\n\n値を断定せず、迷いの構造と反証すべき問いを示してください。信頼度の低い候補から追加で比較すべき組み合わせ、話を聞く相手、小さく試す行動を提案してください。距離を感じている候補や環境についても、決めつけずに仮説として深掘りする問いを含めてください。`;
   }
   function save(r) {
     let h = history();
@@ -4052,13 +3944,13 @@
     }</div>`;
   }
   function renderResultHead(r, insight, early) {
-    return `<div class="result-head"><div class="eyebrow">CAREER EXPLORATORY MAP · v1.0.1</div><h2>これは回答傾向をもとにした探索用の仮説です。</h2><p>${early ? "今回は途中までの回答をもとにした仮説です。最後まで比較すると、傾向や接戦ポイントがより安定します。" : `${r.question_count || 0}問の回答から傾向を整理しました。追加で調べたり、人に話を聞いたりするための地図として使ってください。`}</p></div>`;
+    return `<div class="result-head"><div class="eyebrow">CAREER EXPLORATORY MAP · v1.0.2</div><h2>これは回答傾向をもとにした探索用の仮説です。</h2><p>${early ? "今回は途中までの回答をもとにした仮説です。最後まで比較すると、傾向や接戦ポイントがより安定します。" : `${r.question_count || 0}問の回答から傾向を整理しました。追加で調べたり、人に話を聞いたりするための地図として使ってください。`}</p></div>`;
   }
   function renderTraitRadarPanel(insight) {
-    return `<div class="panel"><h3>traitレーダー</h3><p class="note">この図は16の傾向スコアのうち上位8つを相対表示しています。能力の高さではありません。</p>${renderRadarChart(insight.topTraits)}</div>`;
+    return `<details class="panel"><summary>traitレーダーを見る</summary><p class="note">この図は16の傾向スコアのうち上位8つを相対表示しています。能力の高さではありません。</p>${renderRadarChart(insight.topTraits)}</details>`;
   }
   function renderPossibilityMapPanel(insight) {
-    return `<div class="panel"><h3>キャリア可能性マップ</h3><p>${insight.lean}。</p>${renderPossibilityMap(insight.possibilityMap.points || [])}<p class="note">このマップは正解ではなく、回答傾向をもとにした探索用の仮説です。緑は会社員候補、橙は個人活動候補です。</p></div>`;
+    return `<details class="panel"><summary>キャリア可能性マップを見る</summary><p>${insight.lean}。</p>${renderPossibilityMap(insight.possibilityMap.points || [])}<p class="note">このマップは正解ではなく、回答傾向をもとにした探索用の仮説です。緑は会社員候補、橙は個人活動候補です。</p></details>`;
   }
   function renderAvoidLeaningPanel(insight) {
     return insight.avoidLeaning && insight.avoidLeaning.length
@@ -4093,8 +3985,6 @@
       early = r.is_early_result;
     screen(
       renderResultHead(r, insight, early) +
-        renderTraitRadarPanel(insight) +
-        renderPossibilityMapPanel(insight) +
         bars("関心が寄っている可能性", insight.overall, "positive") +
         renderAvoidLeaningPanel(insight) +
         bars("会社員寄り候補", insight.company) +
@@ -4105,6 +3995,8 @@
         renderMisfitPanel(insight) +
         renderAvoidFactorsPanel(avoid) +
         renderNextActionsPanel(insight) +
+        renderTraitRadarPanel(insight) +
+        renderPossibilityMapPanel(insight) +
         renderPromptPanel(prompt) +
         `<div class="panel"><div class="saved">この結果は端末内の履歴に保存されました</div></div><div class="actions"><button class="btn ghost" id="reset">もう一度やる</button><button class="btn primary" id="hist">履歴を見る</button></div>`
     );
@@ -4274,7 +4166,7 @@
       note = document.querySelector(".result-head p"),
       standard = current.mode === "standard";
     if (tag)
-      tag.textContent = `CAREER EXPLORATORY MAP · v1.0.1 · ${standard ? "標準版" : "がっつり版"}`;
+      tag.textContent = `CAREER EXPLORATORY MAP · v1.0.2 · ${standard ? "標準版" : "がっつり版"}`;
     if (note)
       note.textContent = standard
         ? "これは標準版の探索結果です。現時点の回答から傾向・候補群・未探索の可能性を整理しています。さらに詳しく見たい場合は、がっつり版で接戦やトレードオフを深掘りできます。"
@@ -4343,11 +4235,17 @@
         .filter(Boolean),
       strengthLabel = FILTER_STRENGTH_OPTIONS.find((x) => x.id === filters.strength)?.label || "広めに見る";
     if (tag)
-      tag.textContent = `CAREER EXPLORATORY MAP · v1.0.1 · ${r.mode === "standard" ? "標準版" : "がっつり版"}`;
+      tag.textContent = `CAREER EXPLORATORY MAP · v1.0.2 · ${r.mode === "standard" ? "標準版" : "がっつり版"}`;
     if (head)
       head.insertAdjacentHTML(
         "afterend",
-        `<div class="panel"><h3>今回の探索設定</h3><p class="note"><b>希望する・気になるキャリア形態：</b></p><div class="chips">${desired.map((x) => `<span class="chip">${esc(x.label)}</span>`).join("") || '<span class="note">未設定</span>'}</div><p class="note" style="margin-top:12px"><b>業界・業種フィルター：</b></p><div class="chips">${industryLabels.length ? industryLabels.map((l) => `<span class="chip">${esc(l)}</span>`).join("") : '<span class="note">指定なし</span>'}</div><p class="note" style="margin-top:12px"><b>職種フィルター：</b></p><div class="chips">${roleLabels.length ? roleLabels.map((l) => `<span class="chip">${esc(l)}</span>`).join("") : '<span class="note">指定なし</span>'}</div><p class="note" style="margin-top:12px"><b>探索の広さ：</b> ${esc(strengthLabel)}</p><p class="note" style="margin-top:12px">この設定は、4択比較に出す候補の配合を調整するために使っています。結果は候補を絞り切ったものではなく、探索用の仮説です。</p></div><div class="panel"><p class="note">スコアは回答傾向をもとにした探索用の推定値です。比較回数が少ない候補は中央寄りに補正しており、追加比較によって順位が変わる可能性があります。</p></div>`
+        `<div class="panel"><p class="note">スコアは回答傾向をもとにした探索用の推定値です。比較回数が少ない候補は中央寄りに補正しており、追加比較によって順位が変わる可能性があります。</p></div>`
+      );
+    let promptDetails = document.querySelector(".prompt")?.closest("details");
+    if (promptDetails)
+      promptDetails.insertAdjacentHTML(
+        "beforebegin",
+        `<details class="panel"><summary>今回の探索設定を見る</summary><p class="note"><b>希望する・気になるキャリア形態：</b></p><div class="chips">${desired.map((x) => `<span class="chip">${esc(x.label)}</span>`).join("") || '<span class="note">未設定</span>'}</div><p class="note" style="margin-top:12px"><b>業界・業種フィルター：</b></p><div class="chips">${industryLabels.length ? industryLabels.map((l) => `<span class="chip">${esc(l)}</span>`).join("") : '<span class="note">指定なし</span>'}</div><p class="note" style="margin-top:12px"><b>職種フィルター：</b></p><div class="chips">${roleLabels.length ? roleLabels.map((l) => `<span class="chip">${esc(l)}</span>`).join("") : '<span class="note">指定なし</span>'}</div><p class="note" style="margin-top:12px"><b>探索の広さ：</b> ${esc(strengthLabel)}</p><p class="note" style="margin-top:12px">この設定は、4択比較に出す候補の配合を調整するために使っています。結果は候補を絞り切ったものではなく、探索用の仮説です。</p></details>`
       );
     if (actions && S.answerTrail.length) {
       actions.insertAdjacentHTML(
@@ -4511,7 +4409,7 @@
         .map((x, i) => `${i + 1}. ${x.label}（${x.score}点）`)
         .join("\n"),
       prompt = r.aiPrompt || r.ai_prompt || "";
-    return `キャリア比較ラボ 結果メモ（v1.0.1）\n作成日時: ${new Date(r.created_at || Date.now()).toLocaleString("ja-JP")}\n\n■ 候補TOP${TOP_N_DISPLAY}\n${candidates}\n\n■ 傾向TOP${insight.topTraits.length}\n${traits}\n\n■ AIプロンプト\n${prompt}\n`;
+    return `キャリア比較ラボ 結果メモ（v1.0.2）\n作成日時: ${new Date(r.created_at || Date.now()).toLocaleString("ja-JP")}\n\n■ 候補TOP${TOP_N_DISPLAY}\n${candidates}\n\n■ 傾向TOP${insight.topTraits.length}\n${traits}\n\n■ AIプロンプト\n${prompt}\n`;
   }
   const showResultExport = showResult;
   showResult = (r) => {
