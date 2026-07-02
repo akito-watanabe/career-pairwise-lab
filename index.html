@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#17261f">
-  <title>キャリア比較ラボ v1.0.0</title>
+  <title>キャリア比較ラボ v1.0.1</title>
   <style>
   :root {
     --ink: #17261f;
@@ -1181,6 +1181,13 @@
       padding: 18px 16px;
     }
   }
+
+  /* v1.0.1 探索範囲フィルター（業界・業種／職種／広さ）用スタイル */
+  .or button.chosen {
+    border-color: var(--primary);
+    background: var(--primary);
+    color: white;
+  }
 </style>
 </head>
 <body>
@@ -1349,6 +1356,160 @@
       description: "特定の形に絞らず、幅広い可能性を比較したい"
     }
   ];
+  // ==== 探索範囲フィルター（業界・業種／職種／広さ）v1.0.1 ====
+  const INDUSTRY_FILTERS = [
+    { id: "it_web", label: "IT・Web", description: "Webサービス、SaaS、アプリ、IT企業など" },
+    { id: "ai_data", label: "AI・データ", description: "AI活用、データ分析、機械学習、生成AIなど" },
+    {
+      id: "hr_career",
+      label: "人材・採用・キャリア",
+      description: "採用、人材紹介、組織開発、キャリア支援など"
+    },
+    {
+      id: "education",
+      label: "教育・研修",
+      description: "学校、塾、研修、学習サービス、コーチングなど"
+    },
+    {
+      id: "healthcare_welfare",
+      label: "医療・福祉・ヘルスケア",
+      description: "医療、介護、福祉、健康支援、メンタルヘルスなど"
+    },
+    {
+      id: "food_restaurant",
+      label: "食・飲食",
+      description: "飲食店、食品、カフェ、キッチンカー、菓子製造など"
+    },
+    { id: "retail_ec", label: "小売・EC・物販", description: "店舗販売、ネットショップ、ブランド、物販など" },
+    {
+      id: "entertainment_creator",
+      label: "エンタメ・クリエイティブ",
+      description: "音楽、映像、漫画、ゲーム、配信、イベントなど"
+    },
+    {
+      id: "media_content",
+      label: "メディア・コンテンツ",
+      description: "編集、ライティング、SNS、動画、出版、広告など"
+    },
+    { id: "marketing_ad", label: "広告・マーケティング", description: "広告、PR、ブランド、SNS運用、販促など" },
+    {
+      id: "finance_legal",
+      label: "金融・法務・士業",
+      description: "金融、保険、会計、法務、士業、専門支援など"
+    },
+    {
+      id: "public_nonprofit",
+      label: "公共・行政・NPO",
+      description: "公務員、自治体、団体職員、NPO、社会貢献領域など"
+    },
+    {
+      id: "manufacturing_logistics",
+      label: "メーカー・物流・ものづくり",
+      description: "製造、物流、品質管理、生産管理、モビリティなど"
+    },
+    {
+      id: "local_lifestyle",
+      label: "地域・暮らし・ライフスタイル",
+      description: "地域ビジネス、農業、宿泊、観光、生活サービスなど"
+    },
+    {
+      id: "beauty_bodycare",
+      label: "美容・ボディケア",
+      description: "美容、メイク、整体、トレーニング、セルフケアなど"
+    },
+    {
+      id: "business_consulting",
+      label: "コンサル・事業支援",
+      description: "業務改善、経営支援、顧問、事業開発、BtoB支援など"
+    }
+  ];
+  const ROLE_FILTERS = [
+    {
+      id: "sales_customer",
+      label: "営業・顧客支援",
+      description: "営業、カスタマーサクセス、接客、相談対応など"
+    },
+    {
+      id: "marketing_pr",
+      label: "マーケ・広報",
+      description: "マーケティング、広告、PR、SNS、ブランドづくりなど"
+    },
+    {
+      id: "planning_business",
+      label: "企画・事業づくり",
+      description: "事業企画、商品企画、新規事業、経営企画など"
+    },
+    { id: "hr_org", label: "人事・採用・組織", description: "採用、人事、組織開発、育成、制度設計など" },
+    {
+      id: "corporate_admin",
+      label: "管理部門・専門事務",
+      description: "経理、財務、法務、総務、営業事務、秘書など"
+    },
+    { id: "engineering_it", label: "IT・開発", description: "エンジニア、情シス、データ、AI、品質保証など" },
+    {
+      id: "design_creative",
+      label: "デザイン・制作",
+      description: "デザイン、映像、イラスト、編集、ライティングなど"
+    },
+    {
+      id: "creator_expression",
+      label: "発信・表現活動",
+      description: "動画、配信、音楽、漫画、SNS、VTuberなど"
+    },
+    {
+      id: "education_support",
+      label: "教育・支援",
+      description: "講師、研修、コーチング、キャリア支援、相談業など"
+    },
+    {
+      id: "food_shop_service",
+      label: "店舗・飲食・サービス",
+      description: "飲食店、キッチンカー、カフェ、販売、店舗運営など"
+    },
+    {
+      id: "health_beauty_body",
+      label: "医療・福祉・美容・身体",
+      description: "医療福祉、美容、整体、トレーナー、ケア系サービスなど"
+    },
+    {
+      id: "operations_quality",
+      label: "業務改善・品質・運用",
+      description: "業務企画、品質管理、物流、生産管理、運用改善など"
+    },
+    { id: "research_specialist", label: "研究・専門職", description: "研究開発、士業、専門職、技術専門職など" },
+    {
+      id: "local_small_business",
+      label: "個人事業・小商い",
+      description: "小さな商売、物販、教室、地域ビジネス、店舗事業など"
+    },
+    {
+      id: "founder_management",
+      label: "起業・経営",
+      description: "起業、事業立ち上げ、経営、コミュニティ運営など"
+    }
+  ];
+  const FILTER_STRENGTH_OPTIONS = [
+    {
+      id: "broad",
+      label: "広めに見る",
+      description: "選んだ領域を少し多めに出しつつ、他の可能性も混ぜます"
+    },
+    {
+      id: "balanced",
+      label: "バランスよく見る",
+      description: "選んだ領域と、まだ見ていない領域を半分ずつ混ぜます"
+    },
+    {
+      id: "focused",
+      label: "強めに絞る",
+      description: "選んだ業種・職種に近い候補を中心に比較します"
+    }
+  ];
+  const FILTER_STRENGTH_MIX = {
+    broad: { near: 0.3, diversity: 0.4, unexplored: 0.2, counterexample: 0.1 },
+    balanced: { near: 0.5, diversity: 0.25, unexplored: 0.15, counterexample: 0.1 },
+    focused: { near: 0.7, diversity: 0.15, unexplored: 0.1, counterexample: 0.05 }
+  };
   const REFLECTION_QUESTIONS = [
     {
       id: "reflection_surprise",
@@ -2010,6 +2171,67 @@
       related_industries: industriesFor(category)
     };
   });
+  // ==== 探索範囲フィルター用タグ付け（v1.0.1）====
+  // 既存のcategory（D.job:8種／D.solo:7種）から業界・職種フィルターのタグへ変換する。
+  // 全候補にcategoryが必ずあるため、個別のタグ付け漏れなく全89件に付与できる。
+  const JOB_CATEGORY_INDUSTRY_TAGS = {
+    sales_customer: ["retail_ec", "food_restaurant", "business_consulting"],
+    planning: ["it_web", "marketing_ad", "business_consulting"],
+    marketing_pr: ["marketing_ad", "media_content", "entertainment_creator"],
+    tech_data: ["it_web", "ai_data"],
+    corporate: ["finance_legal", "hr_career"],
+    operations: ["manufacturing_logistics", "retail_ec"],
+    creative: ["entertainment_creator", "media_content"],
+    professional: ["education", "healthcare_welfare", "business_consulting", "finance_legal"]
+  };
+  const JOB_CATEGORY_ROLE_TAGS = {
+    sales_customer: ["sales_customer"],
+    planning: ["planning_business"],
+    marketing_pr: ["marketing_pr"],
+    tech_data: ["engineering_it"],
+    corporate: ["corporate_admin", "hr_org"],
+    operations: ["operations_quality"],
+    creative: ["design_creative"],
+    professional: ["research_specialist", "education_support", "health_beauty_body"]
+  };
+  const JOB_CAREER_MODE_TAGS = ["company_employee", "public_org", "hybrid"];
+  const SOLO_CATEGORY_INDUSTRY_TAGS = {
+    s_store: ["food_restaurant", "local_lifestyle"],
+    s_goods: ["retail_ec"],
+    s_creative: ["entertainment_creator", "media_content"],
+    s_service: ["beauty_bodycare", "healthcare_welfare", "education"],
+    s_freelance: ["it_web", "business_consulting"],
+    s_itbiz: ["it_web", "ai_data"],
+    s_community: ["education", "business_consulting", "media_content"]
+  };
+  const SOLO_CATEGORY_ROLE_TAGS = {
+    s_store: ["food_shop_service"],
+    s_goods: ["local_small_business"],
+    s_creative: ["creator_expression"],
+    s_service: ["health_beauty_body", "education_support"],
+    s_freelance: ["engineering_it", "research_specialist"],
+    s_itbiz: ["engineering_it", "founder_management"],
+    s_community: ["founder_management", "education_support"]
+  };
+  const SOLO_CATEGORY_CAREER_MODE_TAGS = {
+    s_store: ["small_business", "hybrid"],
+    s_goods: ["small_business", "hybrid"],
+    s_creative: ["creator", "hybrid"],
+    s_service: ["small_business", "hybrid"],
+    s_freelance: ["freelance", "hybrid"],
+    s_itbiz: ["startup_founder", "freelance"],
+    s_community: ["startup_founder", "hybrid"]
+  };
+  D.job.forEach((x) => {
+    x.industry_tags = JOB_CATEGORY_INDUSTRY_TAGS[x.category] || [];
+    x.role_tags = JOB_CATEGORY_ROLE_TAGS[x.category] || [];
+    x.career_mode_tags = JOB_CAREER_MODE_TAGS;
+  });
+  D.solo.forEach((x) => {
+    x.industry_tags = SOLO_CATEGORY_INDUSTRY_TAGS[x.category] || [];
+    x.role_tags = SOLO_CATEGORY_ROLE_TAGS[x.category] || [];
+    x.career_mode_tags = SOLO_CATEGORY_CAREER_MODE_TAGS[x.category] || [];
+  });
   // ==== 候補データの分類・trait重み付けロジック ====
   function interestFor(c) {
     return (
@@ -2177,6 +2399,7 @@
     career: null,
     desiredCareerModes: [],
     categoryFilter: [],
+    explorationFilters: { industryIds: [], roleIds: [], strength: "broad" },
     mode: null,
     experienceMode: null,
     sourceSessionId: null,
@@ -2212,7 +2435,7 @@
   function home() {
     progress(0);
     screen(
-      `<div class="hero"><div class="eyebrow">CAREER PAIRWISE LAB · v1.0.0</div><h1>自分でも気づいていない、<br>働き方の傾向を探ろう。</h1><p class="lead">4択比較や2択トレードオフに答えるだけで、<br>自分の判断軸が見えてくる探索ツールです。<br>結果は正解ではなく、次に調べる仮説として使ってください。</p><div class="mode-grid"><div class="mode-card"><span class="time-badge">⏱ 10〜12分</span><h3>標準版</h3><p>まず傾向と可能性マップを見る</p><button class="btn primary" data-mode-start="standard">標準版で始める</button></div><div class="mode-card"><span class="time-badge">⏱ 20〜30分</span><h3>がっつり版</h3><p>迷い・接戦・価値観まで深く見る</p><button class="btn primary" data-mode-start="deep">がっつり版で始める</button></div></div><p class="note">個人情報は入力しません。回答は端末内だけに保存され、外部へ送信されません。</p></div>`
+      `<div class="hero"><div class="eyebrow">CAREER PAIRWISE LAB · v1.0.1</div><h1>自分でも気づいていない、<br>働き方の傾向を探ろう。</h1><p class="lead">4択比較や2択トレードオフに答えるだけで、<br>自分の判断軸が見えてくる探索ツールです。<br>結果は正解ではなく、次に調べる仮説として使ってください。</p><div class="mode-grid"><div class="mode-card"><span class="time-badge">⏱ 10〜12分</span><h3>標準版</h3><p>まず傾向と可能性マップを見る</p><button class="btn primary" data-mode-start="standard">標準版で始める</button></div><div class="mode-card"><span class="time-badge">⏱ 20〜30分</span><h3>がっつり版</h3><p>迷い・接戦・価値観まで深く見る</p><button class="btn primary" data-mode-start="deep">がっつり版で始める</button></div></div><p class="note">個人情報は入力しません。回答は端末内だけに保存され、外部へ送信されません。</p></div>`
     );
     root.querySelectorAll("[data-mode-start]").forEach(
       (b) =>
@@ -2250,6 +2473,15 @@
       )
       .filter(Boolean);
   }
+  // 旧履歴（exploration_filtersを持たない記録）を開いた場合は広め設定として扱う。
+  function explorationFiltersOf(session) {
+    let f = (session && session.exploration_filters) || {};
+    return {
+      industryIds: f.industry_ids || [],
+      roleIds: f.role_ids || [],
+      strength: f.strength || "broad"
+    };
+  }
   function selectDesiredCareerModes() {
     S.view = "desiredCareerModes";
     let chosen = new Set(S.desiredCareerModes);
@@ -2282,11 +2514,98 @@
           ["freelance", "small_business", "creator", "startup_founder"].includes(x)
         );
       S.mode = company && !solo ? "company" : "solo";
-      S.navigationStack.push({ screen: "desiredCareerModes" });
-      transition(phases()[0]);
+      selectExplorationFilters();
     };
     $("#back").onclick = () => select("status");
     $("#reset").onclick = reset;
+  }
+  function selectExplorationFilters() {
+    S.view = "explorationFilters";
+    let f = S.explorationFilters || { industryIds: [], roleIds: [], strength: "broad" },
+      industryChosen = new Set(f.industryIds),
+      roleChosen = new Set(f.roleIds),
+      strength = f.strength || "balanced";
+    let renderCheck = (item, chosenSet, attr) =>
+      `<label class="check"><input type="checkbox" data-${attr}="${item.id}" ${chosenSet.has(item.id) ? "checked" : ""}><span><b>${esc(item.label)}</b><small>${esc(item.description)}</small></span></label>`;
+    function summaryHtml() {
+      let industryLabels = INDUSTRY_FILTERS.filter((x) => industryChosen.has(x.id)).map((x) => x.label),
+        roleLabels = ROLE_FILTERS.filter((x) => roleChosen.has(x.id)).map((x) => x.label),
+        strengthLabel = FILTER_STRENGTH_OPTIONS.find((x) => x.id === strength)?.label || "";
+      return `<div class="panel" id="explorationSummary"><h3>今回の探索設定</h3><p class="note"><b>業界・業種：</b><br>${industryLabels.length ? industryLabels.map(esc).join(" / ") : "指定なし"}</p><p class="note"><b>職種：</b><br>${roleLabels.length ? roleLabels.map(esc).join(" / ") : "指定なし"}</p><p class="note"><b>探索の広さ：</b><br>${esc(strengthLabel)}</p><p class="note">この設定をもとに、4択比較に出す候補の配合を調整します。候補を完全に消すものではありません。</p></div>`;
+    }
+    function updateSummary() {
+      let el = $("#explorationSummary");
+      if (el) el.outerHTML = summaryHtml();
+    }
+    function bindEvents() {
+      root.querySelectorAll("[data-industry]").forEach(
+        (cb) =>
+          (cb.onchange = () => {
+            let id = cb.dataset.industry;
+            if (cb.checked) {
+              if (industryChosen.size >= 5) {
+                cb.checked = false;
+                toast("業界・業種は最大5つまでです");
+                return;
+              }
+              industryChosen.add(id);
+            } else industryChosen.delete(id);
+            updateSummary();
+          })
+      );
+      root.querySelectorAll("[data-role]").forEach(
+        (cb) =>
+          (cb.onchange = () => {
+            let id = cb.dataset.role;
+            if (cb.checked) {
+              if (roleChosen.size >= 5) {
+                cb.checked = false;
+                toast("職種は最大5つまでです");
+                return;
+              }
+              roleChosen.add(id);
+            } else roleChosen.delete(id);
+            updateSummary();
+          })
+      );
+      root.querySelectorAll("[data-strength]").forEach(
+        (b) =>
+          (b.onclick = () => {
+            strength = b.dataset.strength;
+            root
+              .querySelectorAll("[data-strength]")
+              .forEach((x) => x.classList.toggle("chosen", x.dataset.strength === strength));
+            $("#strengthDesc").textContent =
+              FILTER_STRENGTH_OPTIONS.find((x) => x.id === strength)?.description || "";
+            updateSummary();
+          })
+      );
+      $("#openWide").onclick = () => {
+        industryChosen.clear();
+        roleChosen.clear();
+        strength = "broad";
+        render();
+      };
+      $("#explorationNext").onclick = () => {
+        S.explorationFilters = {
+          industryIds: [...industryChosen],
+          roleIds: [...roleChosen],
+          strength: industryChosen.size || roleChosen.size ? strength : "broad"
+        };
+        S.navigationStack.push({ screen: "explorationFilters" });
+        transition(phases()[0]);
+      };
+      $("#back").onclick = () => selectDesiredCareerModes();
+      $("#reset").onclick = reset;
+    }
+    function render() {
+      progress(0.12);
+      screen(
+        `<div class="eyebrow">STEP 3 / 探索範囲を選ぶ</div><h2>探索範囲を選ぶ</h2><p class="lead">気になる業界・業種や職種があれば、ここで指定できます。<br>選んだ領域を少し多めに出しつつ、他の可能性も混ぜて比較します。<br>まだ決まっていない場合は「広く見たい」を選んでください。</p><button class="btn ghost" id="openWide" style="width:100%;margin-bottom:18px">まだ広く見たい（絞らずに広めに比較する）</button><details class="panel" id="industryPanel"><summary>業界・業種を選ぶ（最大5つ）</summary><p class="note">気になる業界があれば最大5つまで選べます。</p><div class="checks">${INDUSTRY_FILTERS.map((x) => renderCheck(x, industryChosen, "industry")).join("")}</div></details><details class="panel" id="rolePanel"><summary>職種を選ぶ（最大5つ）</summary><p class="note">気になる仕事の種類があれば最大5つまで選べます。</p><div class="checks">${ROLE_FILTERS.map((x) => renderCheck(x, roleChosen, "role")).join("")}</div></details><div class="panel"><h3>探索の広さ</h3><p class="note">広め / バランス / 強め から選べます。</p><div class="or" id="strengthPicker">${FILTER_STRENGTH_OPTIONS.map((x) => `<button data-strength="${x.id}" class="${strength === x.id ? "chosen" : ""}">${esc(x.label)}</button>`).join("")}</div><p class="note" id="strengthDesc">${esc(FILTER_STRENGTH_OPTIONS.find((x) => x.id === strength)?.description || "")}</p></div>${summaryHtml()}<button class="btn primary" id="explorationNext">この設定で進む</button><div class="navrow"><button class="link" id="back">← 希望キャリア形態へ</button><button class="link" id="reset">最初から</button></div>`
+      );
+      bindEvents();
+    }
+    render();
   }
   const phases = () =>
     S.experienceMode === "standard"
@@ -2733,7 +3052,8 @@
     let entry = S.answerTrail.pop();
     if (!entry) {
       let nav = S.navigationStack.pop();
-      if (nav?.screen === "desiredCareerModes") selectDesiredCareerModes();
+      if (nav?.screen === "explorationFilters") selectExplorationFilters();
+      else if (nav?.screen === "desiredCareerModes") selectDesiredCareerModes();
       return;
     }
     S.questionCount = Math.max(0, S.questionCount - 1);
@@ -2893,30 +3213,88 @@
     if (ids.includes("hybrid")) score += 0.15;
     return score / ids.length;
   }
+  // 業界・業種・職種フィルターと候補タグの一致度を採点する（除外ではなく配合調整に使う）
+  function hasAny(tags, ids) {
+    return (tags || []).some((t) => (ids || []).includes(t));
+  }
+  function scoreCandidateByFilters(candidate, filters) {
+    let score = 0;
+    if (hasAny(candidate.industry_tags, filters.industryIds)) score += 3;
+    if (hasAny(candidate.role_tags, filters.roleIds)) score += 3;
+    if (hasAny(candidate.career_mode_tags, filters.desiredCareerModes)) score += 2;
+    return score;
+  }
+  function activeExplorationFilters() {
+    let f = S.explorationFilters || { industryIds: [], roleIds: [], strength: "broad" },
+      hasFilter = (f.industryIds && f.industryIds.length) || (f.roleIds && f.roleIds.length);
+    return {
+      industryIds: f.industryIds || [],
+      roleIds: f.roleIds || [],
+      desiredCareerModes: S.desiredCareerModes || [],
+      strength: hasFilter ? f.strength || "balanced" : "broad"
+    };
+  }
   function cardSortCandidates(count, useDesiredModes = false) {
     let open = useDesiredModes && (S.desiredCareerModes || []).includes("open_exploration"),
+      filters = useDesiredModes ? activeExplorationFilters() : null,
+      mix = filters ? FILTER_STRENGTH_MIX[filters.strength] || FILTER_STRENGTH_MIX.broad : null,
       pool = shuffle(careerPool()).map((x) => ({
         ...x,
-        affinityScore: traitAffinity(x) + (useDesiredModes ? desiredModeAffinity(x) : 0)
+        affinityScore: traitAffinity(x) + (useDesiredModes ? desiredModeAffinity(x) : 0),
+        filterScore: filters ? scoreCandidateByFilters(x, filters) : 0,
+        playedCount: (S.scores.career && S.scores.career[x.id]?.played) || 0
       })),
       chosen = [],
       seen = new Set();
-    [...pool]
-      .sort((a, b) => b.affinityScore - a.affinityScore)
-      .forEach((x) => {
-        if (
-          chosen.length < Math.ceil(count * (open ? 0.45 : 0.6)) &&
-          !chosen.some((y) => y.id === x.id)
-        )
-          chosen.push(x);
+    let add = (item) => {
+      if (item && !chosen.some((y) => y.id === item.id)) chosen.push(item);
+    };
+    if (mix) {
+      // 近い候補：フィルタースコア（業界・職種・希望キャリア形態タグの一致）を優先
+      let nearN = Math.max(0, Math.round(count * mix.near));
+      [...pool]
+        .sort((a, b) => b.filterScore - a.filterScore || b.affinityScore - a.affinityScore)
+        .slice(0, nearN)
+        .forEach(add);
+      // カテゴリ分散候補：まだ選ばれていないカテゴリから幅出しする
+      let diversityTarget = chosen.length + Math.max(0, Math.round(count * mix.diversity));
+      pool.forEach((x) => {
+        let c = categoryOf(x);
+        if (chosen.length < diversityTarget && !seen.has(c) && !chosen.some((y) => y.id === x.id)) {
+          add(x);
+          seen.add(c);
+        }
       });
-    pool.forEach((x) => {
-      let c = categoryOf(x);
-      if (chosen.length < count && !seen.has(c) && !chosen.some((y) => y.id === x.id)) {
-        chosen.push(x);
-        seen.add(c);
-      }
-    });
+      // 未探索候補：まだ比較回数が少ない候補を優先して混ぜる
+      let unexploredN = Math.max(0, Math.round(count * mix.unexplored));
+      [...pool]
+        .filter((x) => !chosen.some((y) => y.id === x.id))
+        .sort((a, b) => a.playedCount - b.playedCount || b.affinityScore - a.affinityScore)
+        .slice(0, unexploredN)
+        .forEach(add);
+      // 反証候補：フィルターと関連が薄い候補もあえて混ぜ、視野を狭めすぎないようにする
+      let counterN = Math.max(0, count - chosen.length);
+      shuffle(pool.filter((x) => x.filterScore === 0 && !chosen.some((y) => y.id === x.id)))
+        .slice(0, counterN)
+        .forEach(add);
+    } else {
+      [...pool]
+        .sort((a, b) => b.affinityScore - a.affinityScore)
+        .forEach((x) => {
+          if (
+            chosen.length < Math.ceil(count * (open ? 0.45 : 0.6)) &&
+            !chosen.some((y) => y.id === x.id)
+          )
+            chosen.push(x);
+        });
+      pool.forEach((x) => {
+        let c = categoryOf(x);
+        if (chosen.length < count && !seen.has(c) && !chosen.some((y) => y.id === x.id)) {
+          chosen.push(x);
+          seen.add(c);
+        }
+      });
+    }
     pool.forEach((x) => {
       if (chosen.length < count && !chosen.some((y) => y.id === x.id)) chosen.push(x);
     });
@@ -3530,12 +3908,17 @@
       id: String(Date.now()),
       created_at: now,
       updated_at: now,
-      version: "1.0.0",
+      version: "1.0.1",
       mode: S.experienceMode,
       status: completion,
       source_session_id: S.sourceSessionId,
       user_status: status,
       desired_career_modes: desired,
+      exploration_filters: {
+        industry_ids: [...(S.explorationFilters?.industryIds || [])],
+        role_ids: [...(S.explorationFilters?.roleIds || [])],
+        strength: S.explorationFilters?.strength || "broad"
+      },
       career_mode: null,
       career_branch: S.mode,
       anchorAnswers: S.anchorAnswers,
@@ -3669,7 +4052,7 @@
     }</div>`;
   }
   function renderResultHead(r, insight, early) {
-    return `<div class="result-head"><div class="eyebrow">CAREER EXPLORATORY MAP · v1.0.0</div><h2>これは回答傾向をもとにした探索用の仮説です。</h2><p>${early ? "今回は途中までの回答をもとにした仮説です。最後まで比較すると、傾向や接戦ポイントがより安定します。" : `${r.question_count || 0}問の回答から傾向を整理しました。追加で調べたり、人に話を聞いたりするための地図として使ってください。`}</p></div>`;
+    return `<div class="result-head"><div class="eyebrow">CAREER EXPLORATORY MAP · v1.0.1</div><h2>これは回答傾向をもとにした探索用の仮説です。</h2><p>${early ? "今回は途中までの回答をもとにした仮説です。最後まで比較すると、傾向や接戦ポイントがより安定します。" : `${r.question_count || 0}問の回答から傾向を整理しました。追加で調べたり、人に話を聞いたりするための地図として使ってください。`}</p></div>`;
   }
   function renderTraitRadarPanel(insight) {
     return `<div class="panel"><h3>traitレーダー</h3><p class="note">この図は16の傾向スコアのうち上位8つを相対表示しています。能力の高さではありません。</p>${renderRadarChart(insight.topTraits)}</div>`;
@@ -3770,6 +4153,7 @@
       career: null,
       desiredCareerModes: [],
       categoryFilter: [],
+      explorationFilters: { industryIds: [], roleIds: [], strength: "broad" },
       mode: null,
       experienceMode: null,
       sourceSessionId: null,
@@ -3815,6 +4199,7 @@
       status: r.user_status.id,
       career: desired[0]?.id || null,
       desiredCareerModes: desired.map((x) => x.id),
+      explorationFilters: explorationFiltersOf(r),
       mode: branch,
       experienceMode: "deep_continuation",
       sourceSessionId: r.id,
@@ -3889,7 +4274,7 @@
       note = document.querySelector(".result-head p"),
       standard = current.mode === "standard";
     if (tag)
-      tag.textContent = `CAREER EXPLORATORY MAP · v1.0.0 · ${standard ? "標準版" : "がっつり版"}`;
+      tag.textContent = `CAREER EXPLORATORY MAP · v1.0.1 · ${standard ? "標準版" : "がっつり版"}`;
     if (note)
       note.textContent = standard
         ? "これは標準版の探索結果です。現時点の回答から傾向・候補群・未探索の可能性を整理しています。さらに詳しく見たい場合は、がっつり版で接戦やトレードオフを深掘りできます。"
@@ -3948,13 +4333,21 @@
     let tag = document.querySelector(".result-head .eyebrow"),
       head = document.querySelector(".result-head"),
       actions = document.querySelector(".actions"),
-      desired = desiredModesOf(r);
+      desired = desiredModesOf(r),
+      filters = explorationFiltersOf(r),
+      industryLabels = filters.industryIds
+        .map((id) => INDUSTRY_FILTERS.find((x) => x.id === id)?.label)
+        .filter(Boolean),
+      roleLabels = filters.roleIds
+        .map((id) => ROLE_FILTERS.find((x) => x.id === id)?.label)
+        .filter(Boolean),
+      strengthLabel = FILTER_STRENGTH_OPTIONS.find((x) => x.id === filters.strength)?.label || "広めに見る";
     if (tag)
-      tag.textContent = `CAREER EXPLORATORY MAP · v1.0.0 · ${r.mode === "standard" ? "標準版" : "がっつり版"}`;
+      tag.textContent = `CAREER EXPLORATORY MAP · v1.0.1 · ${r.mode === "standard" ? "標準版" : "がっつり版"}`;
     if (head)
       head.insertAdjacentHTML(
         "afterend",
-        `<div class="panel"><h3>今回選んだ探索方向</h3><div class="chips">${desired.map((x) => `<span class="chip">${esc(x.label)}</span>`).join("") || '<span class="note">未設定</span>'}</div><p class="note">この選択は候補を絞り込むものではなく、4択比較に出す候補の配合を少し調整するために使っています。</p></div><div class="panel"><p class="note">スコアは回答傾向をもとにした探索用の推定値です。比較回数が少ない候補は中央寄りに補正しており、追加比較によって順位が変わる可能性があります。</p></div>`
+        `<div class="panel"><h3>今回の探索設定</h3><p class="note"><b>希望する・気になるキャリア形態：</b></p><div class="chips">${desired.map((x) => `<span class="chip">${esc(x.label)}</span>`).join("") || '<span class="note">未設定</span>'}</div><p class="note" style="margin-top:12px"><b>業界・業種フィルター：</b></p><div class="chips">${industryLabels.length ? industryLabels.map((l) => `<span class="chip">${esc(l)}</span>`).join("") : '<span class="note">指定なし</span>'}</div><p class="note" style="margin-top:12px"><b>職種フィルター：</b></p><div class="chips">${roleLabels.length ? roleLabels.map((l) => `<span class="chip">${esc(l)}</span>`).join("") : '<span class="note">指定なし</span>'}</div><p class="note" style="margin-top:12px"><b>探索の広さ：</b> ${esc(strengthLabel)}</p><p class="note" style="margin-top:12px">この設定は、4択比較に出す候補の配合を調整するために使っています。結果は候補を絞り切ったものではなく、探索用の仮説です。</p></div><div class="panel"><p class="note">スコアは回答傾向をもとにした探索用の推定値です。比較回数が少ない候補は中央寄りに補正しており、追加比較によって順位が変わる可能性があります。</p></div>`
       );
     if (actions && S.answerTrail.length) {
       actions.insertAdjacentHTML(
@@ -3983,6 +4376,18 @@
         desiredModesOf(r)
           .map((x) => x.label)
           .join("、") || "未設定",
+      filters = explorationFiltersOf(r),
+      industryLabels =
+        filters.industryIds
+          .map((id) => INDUSTRY_FILTERS.find((x) => x.id === id)?.label)
+          .filter(Boolean)
+          .join("、") || "指定なし",
+      roleLabels =
+        filters.roleIds
+          .map((id) => ROLE_FILTERS.find((x) => x.id === id)?.label)
+          .filter(Boolean)
+          .join("、") || "指定なし",
+      strengthLabel = FILTER_STRENGTH_OPTIONS.find((x) => x.id === filters.strength)?.label || "広めに見る",
       maxdiff =
         (r.maxDiffLogs || [])
           .slice(-8)
@@ -3993,7 +4398,7 @@
           .slice(-8)
           .map((x) => `${x.a} vs ${x.b}: ${x.answer}`)
           .join(" / ") || "なし";
-    return `現在地: ${r.user_status?.label || "不明"}\n希望する・気になるキャリア形態: ${desired}\nこの選択は候補除外ではなく、MaxDiff候補セットの配合を調整する探索方向として使用しています。\nMaxDiff結果: ${maxdiff}\n接戦ペアワイズ結果: ${pairs}\n\n${promptForBase(r)}`;
+    return `現在地: ${r.user_status?.label || "不明"}\n希望する・気になるキャリア形態: ${desired}\n業界・業種フィルター: ${industryLabels}\n職種フィルター: ${roleLabels}\n探索の広さ: ${strengthLabel}\nこれらは候補除外ではなく、MaxDiff候補セットの配合を調整する探索設定として使用しています。\nMaxDiff結果: ${maxdiff}\n接戦ペアワイズ結果: ${pairs}\n\n${promptForBase(r)}`;
   };
   const showResultReflection = showResult;
   showResult = (r) => {
@@ -4106,7 +4511,7 @@
         .map((x, i) => `${i + 1}. ${x.label}（${x.score}点）`)
         .join("\n"),
       prompt = r.aiPrompt || r.ai_prompt || "";
-    return `キャリア比較ラボ 結果メモ（v1.0.0）\n作成日時: ${new Date(r.created_at || Date.now()).toLocaleString("ja-JP")}\n\n■ 候補TOP${TOP_N_DISPLAY}\n${candidates}\n\n■ 傾向TOP${insight.topTraits.length}\n${traits}\n\n■ AIプロンプト\n${prompt}\n`;
+    return `キャリア比較ラボ 結果メモ（v1.0.1）\n作成日時: ${new Date(r.created_at || Date.now()).toLocaleString("ja-JP")}\n\n■ 候補TOP${TOP_N_DISPLAY}\n${candidates}\n\n■ 傾向TOP${insight.topTraits.length}\n${traits}\n\n■ AIプロンプト\n${prompt}\n`;
   }
   const showResultExport = showResult;
   showResult = (r) => {
