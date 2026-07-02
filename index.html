@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#17261f">
-  <title>キャリア比較ラボ v1.2.0</title>
+  <title>キャリア比較ラボ v1.2.1</title>
   <style>
   :root {
     --ink: #17261f;
@@ -1557,6 +1557,9 @@
     BEST_WIN_WEIGHT: 1,
     NEUTRAL_OVER_WORST_WEIGHT: 0.7
   };
+  // 2択比較1勝の重み（v1.2.1）。MaxDiffの実効値（best約+0.67/回答）に対して
+  // ペアワイズ1問が過大に順位を動かさないよう、+3から+1.5へ減衰した。
+  const PAIRWISE_WIN_SCORE = 1.5;
   // 候補スコアを50を中心に5〜95へ丸める際の共通パラメータ
   const SCORE_DISPLAY_MIN = 5;
   const SCORE_DISPLAY_MAX = 95;
@@ -2823,7 +2826,7 @@
   function home() {
     progress(0);
     screen(
-      `<div class="hero"><div class="eyebrow">CAREER PAIRWISE LAB · v1.2.0</div><h1>自分でも気づいていない、<br>働き方の傾向を探ろう。</h1><p class="lead">4択比較や2択トレードオフに答えるだけで、<br>自分の判断軸が見えてくる探索ツールです。<br>結果は正解ではなく、次に調べる仮説として使ってください。</p><div class="mode-grid"><div class="mode-card"><span class="time-badge">⏱ 12〜15分</span><h3>標準版</h3><p>まず傾向と可能性マップを見る</p><button class="btn primary" data-mode-start="standard">標準版で始める</button></div><div class="mode-card"><span class="time-badge">⏱ 25〜35分</span><h3>がっつり版</h3><p>迷い・接戦・価値観まで深く見る</p><button class="btn primary" data-mode-start="deep">がっつり版で始める</button></div></div><p class="note">個人情報は入力しません。回答は端末内だけに保存され、外部へ送信されません。</p></div>`
+      `<div class="hero"><div class="eyebrow">CAREER PAIRWISE LAB · v1.2.1</div><h1>自分でも気づいていない、<br>働き方の傾向を探ろう。</h1><p class="lead">4択比較や2択トレードオフに答えるだけで、<br>自分の判断軸が見えてくる探索ツールです。<br>結果は正解ではなく、次に調べる仮説として使ってください。</p><div class="mode-grid"><div class="mode-card"><span class="time-badge">⏱ 12〜15分</span><h3>標準版</h3><p>まず傾向と可能性マップを見る</p><button class="btn primary" data-mode-start="standard">標準版で始める</button></div><div class="mode-card"><span class="time-badge">⏱ 25〜35分</span><h3>がっつり版</h3><p>迷い・接戦・価値観まで深く見る</p><button class="btn primary" data-mode-start="deep">がっつり版で始める</button></div></div><p class="note">個人情報は入力しません。回答は端末内だけに保存され、外部へ送信されません。</p></div>`
     );
     root.querySelectorAll("[data-mode-start]").forEach(
       (b) =>
@@ -3372,12 +3375,12 @@
         A.played++;
         B.played++;
         if (log.answer === "a") {
-          A.rawScore += 3;
+          A.rawScore += PAIRWISE_WIN_SCORE;
           A.wins++;
           B.losses++;
           applyTraitLog(a, 1);
         } else if (log.answer === "b") {
-          B.rawScore += 3;
+          B.rawScore += PAIRWISE_WIN_SCORE;
           B.wins++;
           A.losses++;
           applyTraitLog(b, 1);
@@ -3994,12 +3997,12 @@
     A.played += sign;
     B.played += sign;
     if (ans === "a") {
-      A.score += 3 * sign;
+      A.score += PAIRWISE_WIN_SCORE * sign;
       A.wins += sign;
       B.losses += sign;
       updateTraits(a, 1, sign);
     } else if (ans === "b") {
-      B.score += 3 * sign;
+      B.score += PAIRWISE_WIN_SCORE * sign;
       B.wins += sign;
       A.losses += sign;
       updateTraits(b, 1, sign);
@@ -4277,7 +4280,7 @@
       id: String(Date.now()),
       created_at: now,
       updated_at: now,
-      version: "1.2.0",
+      version: "1.2.1",
       mode: S.experienceMode,
       status: completion,
       source_session_id: S.sourceSessionId,
@@ -4461,7 +4464,7 @@
     }</div>`;
   }
   function renderResultHead(r, insight, early) {
-    return `<div class="result-head"><div class="eyebrow">CAREER EXPLORATORY MAP · v1.2.0</div><h2>これは回答傾向をもとにした探索用の仮説です。</h2><p>${early ? "今回は途中までの回答をもとにした仮説です。最後まで比較すると、傾向や接戦ポイントがより安定します。" : `${r.question_count || 0}問の回答から傾向を整理しました。追加で調べたり、人に話を聞いたりするための地図として使ってください。`}</p></div>`;
+    return `<div class="result-head"><div class="eyebrow">CAREER EXPLORATORY MAP · v1.2.1</div><h2>これは回答傾向をもとにした探索用の仮説です。</h2><p>${early ? "今回は途中までの回答をもとにした仮説です。最後まで比較すると、傾向や接戦ポイントがより安定します。" : `${r.question_count || 0}問の回答から傾向を整理しました。追加で調べたり、人に話を聞いたりするための地図として使ってください。`}</p></div>`;
   }
   function renderTraitRadarPanel(insight) {
     return `<details class="panel"><summary>traitレーダーを見る</summary><p class="note">この図は16の傾向スコアのうち上位8つを相対表示しています。能力の高さではありません。</p>${renderRadarChart(insight.topTraits)}</details>`;
@@ -4738,7 +4741,7 @@
       note = document.querySelector(".result-head p"),
       standard = current.mode === "standard";
     if (tag)
-      tag.textContent = `CAREER EXPLORATORY MAP · v1.2.0 · ${modeLabelOf(current.mode)}`;
+      tag.textContent = `CAREER EXPLORATORY MAP · v1.2.1 · ${modeLabelOf(current.mode)}`;
     if (note)
       note.textContent = standard
         ? "これは標準版の探索結果です。現時点の回答から傾向・候補群・未探索の可能性を整理しています。さらに詳しく見たい場合は、がっつり版で接戦やトレードオフを深掘りできます。"
@@ -4801,7 +4804,7 @@
         .filter(Boolean),
       strengthLabel = FILTER_STRENGTH_OPTIONS.find((x) => x.id === filters.strength)?.label || "広めに見る";
     if (tag)
-      tag.textContent = `CAREER EXPLORATORY MAP · v1.2.0 · ${modeLabelOf(r.mode)}`;
+      tag.textContent = `CAREER EXPLORATORY MAP · v1.2.1 · ${modeLabelOf(r.mode)}`;
     if (head)
       head.insertAdjacentHTML(
         "afterend",
@@ -4981,7 +4984,7 @@
         .map((x, i) => `${i + 1}. ${x.label}（${x.score}点）`)
         .join("\n"),
       prompt = r.aiPrompt || r.ai_prompt || "";
-    return `キャリア比較ラボ 結果メモ（v1.2.0）\n作成日時: ${new Date(r.created_at || Date.now()).toLocaleString("ja-JP")}\n\n■ 候補TOP${TOP_N_DISPLAY}\n${candidates}\n\n■ 傾向TOP${insight.topTraits.length}\n${traits}\n\n■ AIプロンプト\n${prompt}\n`;
+    return `キャリア比較ラボ 結果メモ（v1.2.1）\n作成日時: ${new Date(r.created_at || Date.now()).toLocaleString("ja-JP")}\n\n■ 候補TOP${TOP_N_DISPLAY}\n${candidates}\n\n■ 傾向TOP${insight.topTraits.length}\n${traits}\n\n■ AIプロンプト\n${prompt}\n`;
   }
   const showResultExport = showResult;
   showResult = (r) => {
