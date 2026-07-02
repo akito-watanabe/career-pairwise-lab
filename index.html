@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#17261f">
-  <title>キャリア比較ラボ</title>
+  <title>キャリア比較ラボ v1.0.0</title>
   <style>
   :root {
     --ink: #17261f;
@@ -1137,6 +1137,50 @@
       min-height: 132px;
     }
   }
+
+  /* v1.0.0 モバイル最適化 */
+  @media (max-width: 600px) {
+    .app {
+      padding-left: 14px;
+      padding-right: 14px;
+    }
+
+    body {
+      font-size: 15px;
+    }
+
+    h2 {
+      font-size: 22px;
+    }
+
+    .panel {
+      padding: 18px 16px;
+      margin: 16px 0;
+    }
+
+    .result-head {
+      padding: 22px 18px;
+    }
+
+    .actions {
+      flex-direction: column;
+    }
+
+    .md-btn {
+      min-height: 64px;
+      font-size: 13px;
+    }
+
+    .bar-row {
+      grid-template-columns: 22px 78px 1fr 26px;
+      gap: 5px;
+      font-size: 11px;
+    }
+
+    .mode-card {
+      padding: 18px 16px;
+    }
+  }
 </style>
 </head>
 <body>
@@ -1376,43 +1420,43 @@
     industry: `it_software|IT・ソフト|tech;web_service|Webサービス|tech;ai_data|AI・データ|tech;security|セキュリティ|tech;finance|金融・保険|finance;fintech|Fintech|finance;consulting|コンサル|business;hr|人材・HR|business;legal_service|法務・士業|business;bpo|業務支援|business;retail_ec|小売・EC|consumer;food_beverage|食品・飲料|consumer;beauty_fashion|美容・服飾|consumer;travel_hotel|旅行・宿泊|consumer;restaurant|外食|consumer;manufacturing|メーカー|industry;mobility|モビリティ|industry;logistics|物流・運輸|industry;real_estate|不動産・建設|industry;energy|エネルギー|industry;healthcare|医療・健康|social;welfare|介護・福祉|social;education|教育|social;public_admin|公共・行政|social;agriculture|農業・食流通|social;advertising|広告・マーケ|creative;media_publish|メディア出版|creative;music_live|音楽・ライブ|creative;art_culture|芸術・文化|creative;movie_video|映像・映画|creative;manga_anime|漫画・アニメ|creative;game_entertainment|ゲーム|creative;event_stage|イベント・舞台|creative`,
     job: `sales|営業|sales_customer;inside_sales|内勤営業|sales_customer;customer_success|CS|sales_customer;store_service|店舗運営|sales_customer;customer_service|接客サービス|sales_customer;business_planning|事業企画|planning;business_development|事業開発|planning;product_planning|商品企画|planning;product_manager|PdM・企画|planning;corporate_planning|経営企画|planning;new_business|新規事業|planning;marketing|マーケ|marketing_pr;ad_operation|広告運用|marketing_pr;content_planning|コンテンツ企画|marketing_pr;public_relations|広報PR|marketing_pr;brand_planning|ブランド|marketing_pr;research|リサーチ|marketing_pr;engineering|開発|tech_data;data_analysis|データ分析|tech_data;ai_ml|AI・機械学習|tech_data;information_systems|情シス|tech_data;qa_quality|品質管理|tech_data;rd|研究R&D|tech_data;recruiting|人事・採用|corporate;org_development|組織開発|corporate;accounting_finance|経理財務|corporate;legal_compliance|法務|corporate;general_affairs|総務|corporate;assistant|秘書補佐|corporate;office_work|一般事務|operations;sales_admin|営業事務|operations;operation_planning|業務企画|operations;production_control|生産管理|operations;logistics_control|物流管理|operations;support_center|サポート|operations;design|デザイン|creative;ux_ui|UX/UI|creative;writing_editing|編集・文章|creative;video_music|映像・音楽|creative;illustration_art|イラスト|creative;event_production|イベント制作|creative;consultant|コンサル|professional;career_support|キャリア支援|professional;training_education|教育研修|professional;medical_welfare|医療福祉職|professional;architecture|建築設計|professional;licensed_professional|士業専門職|professional;sales_planning|営業企画|planning;logistics_planning|物流企画|operations;school_staff|学校職員|professional;infra_operations|インフラ運用|operations;welfare_specialist|福祉専門職|professional`,
     solo: [
-      ["kitchen_car", "キッチンカー", "移動販売で飲食を提供し、出店場所やメニューで勝負する"],
-      ["small_restaurant", "小さな飲食店", "自分の店や間借り営業で飲食を提供する"],
-      ["handmade_goods", "ハンドメイド", "アクセサリー、雑貨、服などを作って販売する"],
-      ["online_shop", "ネット物販", "ECやフリマで商品を仕入れ・販売する"],
-      ["music_live", "音楽活動", "作曲、演奏、歌、ライブ、音源販売などで活動する"],
-      ["illustration_art", "イラスト", "絵、漫画、アート作品を制作して販売・受託する"],
-      ["video_streaming", "動画・配信", "動画制作、配信、SNS発信で人を集める"],
-      ["writing_editing", "文章・編集", "記事、note、書籍、編集、コピー制作を行う"],
-      ["photo_movie", "写真・映像", "撮影、編集、映像制作を仕事にする"],
-      ["beauty_bodycare", "美容・整体", "美容、整体、マッサージ、パーソナルケアを提供する"],
-      ["teaching_coaching", "教室・コーチ", "勉強、運動、音楽、キャリアなどを教える"],
-      ["it_freelance", "IT受託", "Web制作、開発、データ、業務改善などを案件で受ける"],
-      ["consulting_advisor", "コンサル顧問", "経験や専門知識を使って企業や個人を支援する"],
-      ["local_farming", "農業・地域商売", "農産物、地域資源、観光、体験を商売にする"],
-      ["cafe_bakery", "カフェ・菓子製造", "カフェの開業や菓子・パンの製造販売を行う"],
-      ["select_shop", "セレクトショップ", "自分の視点で選んだ商品を仕入れて販売する"],
-      ["personal_training", "パーソナルトレーニング", "個人に合わせた運動指導やボディメイクを行う"],
-      ["event_host", "イベント主催", "イベントや催しを企画し、集客・運営する"],
-      ["guesthouse", "民泊・宿泊運営", "宿泊施設や民泊を企画・運営する"],
-      ["pet_service", "ペット関連サービス", "ペットの世話、トレーニング、関連商品を扱う"],
-      ["coaching_counseling", "コーチング・相談業", "対話を通じて相手の意思決定や変化を支援する"],
-      ["manga_doujin", "漫画・同人活動", "漫画や同人作品を制作し、発表・販売する"],
-      ["sns_creator", "SNS発信活動", "SNSでの発信を軸にファンや影響力を育てる"],
-      ["vtuber_character", "VTuber・キャラクター活動", "キャラクターを介した配信や表現活動を行う"],
-      ["game_creation", "ゲーム制作", "個人やチームでゲームを企画・開発する"],
-      ["voice_narration", "ボイス・ナレーション", "声を使った表現やナレーションを提供する"],
-      ["stage_performance", "舞台・イベント表現", "舞台やライブイベントで表現活動を行う"],
-      ["blog_media", "ブログ・メディア運営", "ブログや独自メディアを運営し発信を続ける"],
-      ["saas_service", "SaaS・Webサービス", "自らSaaSやWebサービスを立ち上げて運営する"],
-      ["ai_service", "AI活用サービス", "AIを活用したサービスや事業を立ち上げる"],
-      ["career_support_biz", "採用・キャリア支援事業", "採用支援やキャリア支援を事業として行う"],
-      ["education_biz", "教育サービス事業", "教育・学習サービスを事業として立ち上げる"],
-      ["community_biz", "コミュニティ運営", "会員制コミュニティやサロンを運営し収益化する"],
-      ["content_biz", "コンテンツ事業", "メディアやコンテンツを軸に事業を作る"],
-      ["consulting_biz", "コンサル・顧問業", "専門知識を使って企業や個人に助言する事業を行う"],
-      ["franchise_biz", "フランチャイズ経営", "フランチャイズに加盟し店舗や事業を運営する"],
-      ["agency_biz", "代理店ビジネス", "商品やサービスの販売代理を行う事業を営む"]
+      ["kitchen_car", "キッチンカー", "移動販売で飲食を提供し、出店場所やメニューで勝負する", "s_store"],
+      ["small_restaurant", "小さな飲食店", "自分の店や間借り営業で飲食を提供する", "s_store"],
+      ["handmade_goods", "ハンドメイド", "アクセサリー、雑貨、服などを作って販売する", "s_goods"],
+      ["online_shop", "ネット物販", "ECやフリマで商品を仕入れ・販売する", "s_goods"],
+      ["music_live", "音楽活動", "作曲、演奏、歌、ライブ、音源販売などで活動する", "s_creative"],
+      ["illustration_art", "イラスト", "絵、漫画、アート作品を制作して販売・受託する", "s_creative"],
+      ["video_streaming", "動画・配信", "動画制作、配信、SNS発信で人を集める", "s_creative"],
+      ["writing_editing", "文章・編集", "記事、note、書籍、編集、コピー制作を行う", "s_creative"],
+      ["photo_movie", "写真・映像", "撮影、編集、映像制作を仕事にする", "s_creative"],
+      ["beauty_bodycare", "美容・整体", "美容、整体、マッサージ、パーソナルケアを提供する", "s_service"],
+      ["teaching_coaching", "教室・コーチ", "勉強、運動、音楽、キャリアなどを教える", "s_service"],
+      ["it_freelance", "IT受託", "Web制作、開発、データ、業務改善などを案件で受ける", "s_freelance"],
+      ["consulting_advisor", "コンサル顧問", "経験や専門知識を使って企業や個人を支援する", "s_freelance"],
+      ["local_farming", "農業・地域商売", "農産物、地域資源、観光、体験を商売にする", "s_store"],
+      ["cafe_bakery", "カフェ・菓子製造", "カフェの開業や菓子・パンの製造販売を行う", "s_store"],
+      ["select_shop", "セレクトショップ", "自分の視点で選んだ商品を仕入れて販売する", "s_goods"],
+      ["personal_training", "パーソナルトレーニング", "個人に合わせた運動指導やボディメイクを行う", "s_service"],
+      ["event_host", "イベント主催", "イベントや催しを企画し、集客・運営する", "s_service"],
+      ["guesthouse", "民泊・宿泊運営", "宿泊施設や民泊を企画・運営する", "s_store"],
+      ["pet_service", "ペット関連サービス", "ペットの世話、トレーニング、関連商品を扱う", "s_service"],
+      ["coaching_counseling", "コーチング・相談業", "対話を通じて相手の意思決定や変化を支援する", "s_service"],
+      ["manga_doujin", "漫画・同人活動", "漫画や同人作品を制作し、発表・販売する", "s_creative"],
+      ["sns_creator", "SNS発信活動", "SNSでの発信を軸にファンや影響力を育てる", "s_creative"],
+      ["vtuber_character", "VTuber・キャラクター活動", "キャラクターを介した配信や表現活動を行う", "s_creative"],
+      ["game_creation", "ゲーム制作", "個人やチームでゲームを企画・開発する", "s_creative"],
+      ["voice_narration", "ボイス・ナレーション", "声を使った表現やナレーションを提供する", "s_creative"],
+      ["stage_performance", "舞台・イベント表現", "舞台やライブイベントで表現活動を行う", "s_creative"],
+      ["blog_media", "ブログ・メディア運営", "ブログや独自メディアを運営し発信を続ける", "s_creative"],
+      ["saas_service", "SaaS・Webサービス", "自らSaaSやWebサービスを立ち上げて運営する", "s_itbiz"],
+      ["ai_service", "AI活用サービス", "AIを活用したサービスや事業を立ち上げる", "s_itbiz"],
+      ["career_support_biz", "採用・キャリア支援事業", "採用支援やキャリア支援を事業として行う", "s_community"],
+      ["education_biz", "教育サービス事業", "教育・学習サービスを事業として立ち上げる", "s_community"],
+      ["community_biz", "コミュニティ運営", "会員制コミュニティやサロンを運営し収益化する", "s_community"],
+      ["content_biz", "コンテンツ事業", "メディアやコンテンツを軸に事業を作る", "s_community"],
+      ["consulting_biz", "コンサル・顧問業", "専門知識を使って企業や個人に助言する事業を行う", "s_freelance"],
+      ["franchise_biz", "フランチャイズ経営", "フランチャイズに加盟し店舗や事業を運営する", "s_store"],
+      ["agency_biz", "代理店ビジネス", "商品やサービスの販売代理を行う事業を営む", "s_community"]
     ],
     revenue: [
       ["product_sales", "商品販売", "物や作品を売って収益を得る"],
@@ -1927,6 +1971,7 @@
       id: v[0],
       label: v[1],
       description: v[2] || `${v[1]}に関わる領域`,
+      category: v[3] || null,
       desc: CANDIDATE_TEXT["solo:" + v[0]]?.desc,
       detail: CANDIDATE_TEXT["solo:" + v[0]]?.detail
     }));
@@ -2013,6 +2058,27 @@
       }[c] || []
     );
   }
+  // ==== 候補フィルター用カテゴリ（v1.0.0）====
+  const JOB_CATEGORY_LABELS = {
+    sales_customer: "営業・接客",
+    planning: "企画・事業開発",
+    marketing_pr: "マーケ・広報",
+    tech_data: "IT/エンジニア",
+    corporate: "バックオフィス",
+    operations: "業務・運用",
+    creative: "クリエイティブ",
+    professional: "専門職"
+  };
+  const SOLO_CATEGORY_LABELS = {
+    s_store: "店舗・実店舗",
+    s_goods: "物販",
+    s_creative: "創作・発信",
+    s_service: "対人サービス",
+    s_freelance: "フリーランス",
+    s_itbiz: "IT事業",
+    s_community: "コミュニティ"
+  };
+  const CATEGORY_FILTER_MIN_POOL = 8; // フィルター後の候補が少なすぎる場合は探索が成立しないため、未フィルター扱いに戻す
   function traitWeights(item, phase) {
     let w = {},
       add = (names, v = 0.7) => names.forEach((n) => (w[n] = Math.max(w[n] || 0, v))),
@@ -2110,6 +2176,7 @@
     status: null,
     career: null,
     desiredCareerModes: [],
+    categoryFilter: [],
     mode: null,
     experienceMode: null,
     sourceSessionId: null,
@@ -2145,7 +2212,7 @@
   function home() {
     progress(0);
     screen(
-      `<div class="hero"><div class="eyebrow">CAREER PAIRWISE LAB · v0.9.9</div><h1>自分でも気づいていない、<br>働き方の傾向を探ろう。</h1><p class="lead">4択比較や2択トレードオフに答えるだけで、<br>自分の判断軸が見えてくる探索ツールです。<br>結果は正解ではなく、次に調べる仮説として使ってください。</p><div class="mode-grid"><div class="mode-card"><span class="time-badge">⏱ 10〜12分</span><h3>標準版</h3><p>まず傾向と可能性マップを見る</p><button class="btn primary" data-mode-start="standard">標準版で始める</button></div><div class="mode-card"><span class="time-badge">⏱ 20〜30分</span><h3>がっつり版</h3><p>迷い・接戦・価値観まで深く見る</p><button class="btn primary" data-mode-start="deep">がっつり版で始める</button></div></div><p class="note">個人情報は入力しません。回答は端末内だけに保存され、外部へ送信されません。</p></div>`
+      `<div class="hero"><div class="eyebrow">CAREER PAIRWISE LAB · v1.0.0</div><h1>自分でも気づいていない、<br>働き方の傾向を探ろう。</h1><p class="lead">4択比較や2択トレードオフに答えるだけで、<br>自分の判断軸が見えてくる探索ツールです。<br>結果は正解ではなく、次に調べる仮説として使ってください。</p><div class="mode-grid"><div class="mode-card"><span class="time-badge">⏱ 10〜12分</span><h3>標準版</h3><p>まず傾向と可能性マップを見る</p><button class="btn primary" data-mode-start="standard">標準版で始める</button></div><div class="mode-card"><span class="time-badge">⏱ 20〜30分</span><h3>がっつり版</h3><p>迷い・接戦・価値観まで深く見る</p><button class="btn primary" data-mode-start="deep">がっつり版で始める</button></div></div><p class="note">個人情報は入力しません。回答は端末内だけに保存され、外部へ送信されません。</p></div>`
     );
     root.querySelectorAll("[data-mode-start]").forEach(
       (b) =>
@@ -2373,11 +2440,16 @@
     });
     return best;
   }
-  function careerPool() {
-    return [
+  function careerPool(applyFilter = true) {
+    let pool = [
       ...D.job.map((x) => ({ ...x, id: `job:${x.id}`, originalId: x.id, domain: "company" })),
       ...D.solo.map((x) => ({ ...x, id: `solo:${x.id}`, originalId: x.id, domain: "individual" }))
     ];
+    if (applyFilter && S.categoryFilter && S.categoryFilter.length) {
+      let filtered = pool.filter((x) => S.categoryFilter.includes(x.category));
+      if (filtered.length >= CATEGORY_FILTER_MIN_POOL) return filtered;
+    }
+    return pool;
   }
   function candidates(phase) {
     return phase === "workStyle"
@@ -2702,7 +2774,7 @@
       [get("company", "org_development"), get("individual", "teaching_coaching"), "warmup"],
       [get("company", "data_analysis"), get("individual", "music_live"), "warmup"],
       [get("company", "accounting_finance"), get("individual", "small_restaurant"), "warmup"]
-    ];
+    ].filter(([a, b]) => a && b); // カテゴリフィルターで固定候補が除外された場合はそのペアを飛ばす
   }
   function styleOption(id, label, description, trait_weights) {
     return { id, label, description, trait_weights, layer: "workStyle" };
@@ -3353,7 +3425,7 @@
     let traits = r.userTraits || freshTraits(),
       stats = (r.candidateStats && r.candidateStats.career) || [],
       byId = Object.fromEntries(stats.map((x) => [x.id, finalizeStat({ ...x })]));
-    return careerPool()
+    return careerPool(false) // 結果表示は現在の絞り込み状態に関わらず全候補から集計する
       .map((item) => {
         let stat = byId[item.id] || emptyStat(item),
           affinity = affinityFor(item, traits),
@@ -3458,7 +3530,7 @@
       id: String(Date.now()),
       created_at: now,
       updated_at: now,
-      version: "0.9.9",
+      version: "1.0.0",
       mode: S.experienceMode,
       status: completion,
       source_session_id: S.sourceSessionId,
@@ -3597,7 +3669,7 @@
     }</div>`;
   }
   function renderResultHead(r, insight, early) {
-    return `<div class="result-head"><div class="eyebrow">CAREER EXPLORATORY MAP · v0.9.9</div><h2>これは回答傾向をもとにした探索用の仮説です。</h2><p>${early ? "今回は途中までの回答をもとにした仮説です。最後まで比較すると、傾向や接戦ポイントがより安定します。" : `${r.question_count || 0}問の回答から傾向を整理しました。追加で調べたり、人に話を聞いたりするための地図として使ってください。`}</p></div>`;
+    return `<div class="result-head"><div class="eyebrow">CAREER EXPLORATORY MAP · v1.0.0</div><h2>これは回答傾向をもとにした探索用の仮説です。</h2><p>${early ? "今回は途中までの回答をもとにした仮説です。最後まで比較すると、傾向や接戦ポイントがより安定します。" : `${r.question_count || 0}問の回答から傾向を整理しました。追加で調べたり、人に話を聞いたりするための地図として使ってください。`}</p></div>`;
   }
   function renderTraitRadarPanel(insight) {
     return `<div class="panel"><h3>traitレーダー</h3><p class="note">この図は16の傾向スコアのうち上位8つを相対表示しています。能力の高さではありません。</p>${renderRadarChart(insight.topTraits)}</div>`;
@@ -3697,6 +3769,7 @@
       status: null,
       career: null,
       desiredCareerModes: [],
+      categoryFilter: [],
       mode: null,
       experienceMode: null,
       sourceSessionId: null,
@@ -3816,7 +3889,7 @@
       note = document.querySelector(".result-head p"),
       standard = current.mode === "standard";
     if (tag)
-      tag.textContent = `CAREER EXPLORATORY MAP · v0.9.9 · ${standard ? "標準版" : "がっつり版"}`;
+      tag.textContent = `CAREER EXPLORATORY MAP · v1.0.0 · ${standard ? "標準版" : "がっつり版"}`;
     if (note)
       note.textContent = standard
         ? "これは標準版の探索結果です。現時点の回答から傾向・候補群・未探索の可能性を整理しています。さらに詳しく見たい場合は、がっつり版で接戦やトレードオフを深掘りできます。"
@@ -3877,7 +3950,7 @@
       actions = document.querySelector(".actions"),
       desired = desiredModesOf(r);
     if (tag)
-      tag.textContent = `CAREER EXPLORATORY MAP · v0.9.9 · ${r.mode === "standard" ? "標準版" : "がっつり版"}`;
+      tag.textContent = `CAREER EXPLORATORY MAP · v1.0.0 · ${r.mode === "standard" ? "標準版" : "がっつり版"}`;
     if (head)
       head.insertAdjacentHTML(
         "afterend",
@@ -3947,6 +4020,188 @@
       r.reflectionAnswers = answers;
       toast("メモを保存しました");
     };
+  };
+
+  // ==== v1.0.0 追加機能 ====
+  // スタート画面：候補フィルター（モード選択前にカテゴリで絞り込む）
+  const homeFilterBase = home;
+  home = () => {
+    homeFilterBase();
+    let modeGrid = root.querySelector(".mode-grid");
+    if (!modeGrid) return;
+    let box = (k, l) =>
+        `<label class="check"><input type="checkbox" data-cat="${k}" ${S.categoryFilter.includes(k) ? "checked" : ""}><span><b>${esc(l)}</b></span></label>`,
+      jobBoxes = Object.entries(JOB_CATEGORY_LABELS)
+        .map(([k, l]) => box(k, l))
+        .join(""),
+      soloBoxes = Object.entries(SOLO_CATEGORY_LABELS)
+        .map(([k, l]) => box(k, l))
+        .join("");
+    modeGrid.insertAdjacentHTML(
+      "beforebegin",
+      `<details class="panel" id="categoryFilterPanel"><summary>候補を絞り込む（任意）</summary><p class="note">カテゴリを選ぶと、そのカテゴリの候補だけで探索します。未選択なら全候補が対象です。</p><p class="note" style="margin:14px 0 6px"><b>会社の仕事</b></p><div class="checks">${jobBoxes}</div><p class="note" style="margin:14px 0 6px"><b>個人・フリーランスの仕事</b></p><div class="checks">${soloBoxes}</div></details>`
+    );
+    root.querySelectorAll("[data-cat]").forEach(
+      (cb) =>
+        (cb.onchange = () => {
+          let id = cb.dataset.cat;
+          if (cb.checked) {
+            if (!S.categoryFilter.includes(id)) S.categoryFilter.push(id);
+          } else S.categoryFilter = S.categoryFilter.filter((x) => x !== id);
+        })
+    );
+  };
+
+  // MaxDiff・接戦ペアワイズ画面：フェーズ内進捗バー（現在N問目 / 全M問）
+  function phaseProgressBar() {
+    let total = S.queue.length || 1,
+      current = Math.min(S.index + 1, total),
+      pct = Math.round((S.index / total) * 100);
+    return `<div class="progress-shell"><div class="progress-label"><span>現在 ${current}問目 / 全${total}問</span><span>${pct}%</span></div><div class="progress"><i style="width:${Math.min(100, pct)}%"></i></div></div>`;
+  }
+  const maxDiffScreenProgress = maxDiffScreen;
+  maxDiffScreen = () => {
+    maxDiffScreenProgress();
+    let eyebrow = root.querySelector(".eyebrow");
+    if (eyebrow) eyebrow.insertAdjacentHTML("afterend", phaseProgressBar());
+  };
+  const pairProgress = pair;
+  pair = () => {
+    pairProgress();
+    if (["pairwise", "closePairwise"].includes(S.phase)) {
+      let eyebrow = root.querySelector(".eyebrow");
+      if (eyebrow) eyebrow.insertAdjacentHTML("afterend", phaseProgressBar());
+    }
+  };
+
+  // 結果画面：結果コピー・テキストダウンロード
+  function shareText(insight) {
+    let top3 = insight.overall
+        .slice(0, 3)
+        .map((x, i) => `${i + 1}. ${x.label}（${x.displayScore}点）`)
+        .join("\n"),
+      traits3 = insight.topTraits
+        .slice(0, 3)
+        .map((x, i) => `${i + 1}. ${x.label}（${x.score}点）`)
+        .join("\n");
+    return `【キャリア比較ラボ 結果】\n\n■ 候補TOP3\n${top3}\n\n■ 傾向TOP3\n${traits3}`;
+  }
+  function downloadText(filename, text) {
+    let blob = new Blob([text], { type: "text/plain;charset=utf-8" }),
+      url = URL.createObjectURL(blob),
+      a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.append(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }
+  function resultDownloadText(r, insight) {
+    let candidates = insight.overall
+        .slice(0, TOP_N_DISPLAY)
+        .map((x, i) => `${i + 1}. ${x.label}（${x.displayScore}点 / 比較${x.played}回）`)
+        .join("\n"),
+      traits = insight.topTraits
+        .map((x, i) => `${i + 1}. ${x.label}（${x.score}点）`)
+        .join("\n"),
+      prompt = r.aiPrompt || r.ai_prompt || "";
+    return `キャリア比較ラボ 結果メモ（v1.0.0）\n作成日時: ${new Date(r.created_at || Date.now()).toLocaleString("ja-JP")}\n\n■ 候補TOP${TOP_N_DISPLAY}\n${candidates}\n\n■ 傾向TOP${insight.topTraits.length}\n${traits}\n\n■ AIプロンプト\n${prompt}\n`;
+  }
+  const showResultExport = showResult;
+  showResult = (r) => {
+    showResultExport(r);
+    let insight = r.insights || insightFor(r),
+      head = document.querySelector(".result-head");
+    if (!head) return;
+    head.insertAdjacentHTML(
+      "beforeend",
+      `<div class="actions" style="margin-top:16px"><button class="btn secondary" id="shareResult">結果をコピー</button><button class="btn secondary" id="downloadResult">結果をテキストで保存</button></div>`
+    );
+    $("#shareResult").onclick = () => copy(shareText(insight));
+    $("#downloadResult").onclick = () =>
+      downloadText(`career-pairwise-lab-result-${r.id || Date.now()}.txt`, resultDownloadText(r, insight));
+  };
+
+  // 履歴画面：上位候補のスコア推移グラフ（SVG）
+  function scoreTrendSeries(h) {
+    if (!h.length) return { series: [], count: 0 };
+    let chronological = [...h].reverse().slice(-MAX_HISTORY),
+      top3 = getRank(h[0], "career").slice(0, 3),
+      series = top3.map((c) => ({
+        id: c.id,
+        label: c.label,
+        points: chronological
+          .map((r, i) => {
+            let stat = getRank(r, "career").find((x) => x.id === c.id),
+              score = stat ? (stat.displayScore ?? stat.score) : null;
+            return typeof score === "number" ? { i, score } : null;
+          })
+          .filter(Boolean)
+      }));
+    return { series, count: chronological.length };
+  }
+  function renderScoreTrendChart(h) {
+    let { series, count } = scoreTrendSeries(h);
+    if (!series.length) return "";
+    let w = 320,
+      hgt = 200,
+      padL = 30,
+      padR = 10,
+      padT = 14,
+      padB = 24,
+      plotW = w - padL - padR,
+      plotH = hgt - padT - padB,
+      xOf = (i) => padL + (count <= 1 ? plotW / 2 : (i / (count - 1)) * plotW),
+      yOf = (s) => padT + plotH - (Math.max(0, Math.min(100, s)) / 100) * plotH,
+      colors = ["#db5d3b", "#2e6b52", "#8a7a4f"],
+      gridLines = [0, 25, 50, 75, 100]
+        .map(
+          (v) =>
+            `<line class="grid" x1="${padL}" y1="${yOf(v)}" x2="${w - padR}" y2="${yOf(v)}"/><text x="${padL - 6}" y="${yOf(v) + 3}" text-anchor="end">${v}</text>`
+        )
+        .join(""),
+      lines = series
+        .map((s, idx) => {
+          let color = colors[idx % colors.length],
+            pts = s.points.map((p) => `${xOf(p.i)},${yOf(p.score)}`).join(" "),
+            dots = s.points
+              .map((p) => `<circle class="dot" cx="${xOf(p.i)}" cy="${yOf(p.score)}" r="3" style="fill:${color}"/>`)
+              .join(""),
+            polyline =
+              s.points.length > 1
+                ? `<polyline points="${pts}" fill="none" stroke="${color}" stroke-width="2"/>`
+                : "";
+          return polyline + dots;
+        })
+        .join(""),
+      legend = series
+        .map(
+          (s, idx) =>
+            `<span class="chip" style="border-left:8px solid ${colors[idx % colors.length]}">${esc(s.label)}</span>`
+        )
+        .join("");
+    return `<div class="panel"><h3>上位候補のスコア推移</h3><p class="note">直近${count}件の記録から、現在の上位3候補のスコアの推移を表示しています。</p><svg class="viz" viewBox="0 0 ${w} ${hgt}" role="img" aria-label="上位候補のスコア推移グラフ">${gridLines}${lines}</svg><div class="chips" style="margin-top:8px">${legend}</div></div>`;
+  }
+  const showHistoryTrend = showHistory;
+  showHistory = () => {
+    showHistoryTrend();
+    let lead = root.querySelector(".lead");
+    if (lead) lead.insertAdjacentHTML("afterend", renderScoreTrendChart(history()));
+  };
+
+  // 結果画面：キャリアコーチ導線
+  // TODO: recipient_id は仮のプレースホルダーです。実際のTwitter(X)ユーザーIDに差し替えてください。
+  const COACH_TWITTER_DM_URL = "https://x.com/messages/compose?recipient_id=YOUR_USERNAME_HERE";
+  const showResultCoach = showResult;
+  showResult = (r) => {
+    showResultCoach(r);
+    let screenEl = root.querySelector(".screen");
+    if (!screenEl) return;
+    screenEl.insertAdjacentHTML(
+      "beforeend",
+      `<div class="panel"><h3>キャリアの話を、プロと壁打ちする</h3><p class="note">このデータを持って、プロのキャリアコーチに壁打ちしてみよう。</p><a class="btn primary" style="display:block;text-align:center;text-decoration:none" href="${COACH_TWITTER_DM_URL}" target="_blank" rel="noopener">AKITOに相談する（Twitter DM）</a></div>`
+    );
   };
 
   // ==== 起動処理 ====
