@@ -4,8 +4,9 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#17261f">
-  <title>キャリア比較ラボ v1.2.1</title>
+  <title>キャリア比較ラボ v1.3.0</title>
   <style>
+  /* ==== ベース：カラーパレット・リセット ==== */
   :root {
     --ink: #17261f;
     --muted: #657069;
@@ -189,6 +190,7 @@
     flex: 1;
   }
 
+  /* ==== 選択リスト（現在地・キャリア形態） ==== */
   .choice-list {
     display: grid;
     gap: 12px;
@@ -219,6 +221,7 @@
     color: var(--muted);
   }
 
+  /* ==== 2択比較カード ==== */
   .pair {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -409,6 +412,7 @@
     background: #f0eee7;
   }
 
+  /* ==== 履歴リスト ==== */
   .history {
     display: grid;
     gap: 10px;
@@ -439,6 +443,7 @@
     color: var(--muted);
   }
 
+  /* ==== トースト通知 ==== */
   .toast {
     position: fixed;
     left: 50%;
@@ -511,13 +516,6 @@
   }
 
   .rank-meta,
-  .rank-reason {
-    margin: 5px 0 0 36px;
-    font-size: 11px;
-    line-height: 1.5;
-    color: var(--muted);
-  }
-
   .candidate-desc {
     font-size: 13px;
     color: var(--muted);
@@ -531,6 +529,7 @@
     opacity: 0.85;
   }
 
+  /* ==== 可視化（レーダー・マップ・推移） ==== */
   .viz {
     display: block;
     width: 100%;
@@ -639,27 +638,9 @@
     color: var(--muted);
   }
 
-  .sort-list {
-    display: grid;
-    gap: 9px;
-  }
-
-  .sort-row {
-    border: 1px solid var(--line);
-    border-radius: 15px;
-    padding: 13px;
-    background: var(--card);
-  }
-
   .sort-row b {
     display: block;
     margin-bottom: 9px;
-  }
-
-  .sort-actions {
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    gap: 5px;
   }
 
   .sort-actions button {
@@ -676,6 +657,7 @@
     color: white;
   }
 
+  /* ==== MaxDiff（4択比較） ==== */
   .maxdiff-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -960,6 +942,7 @@
     color: var(--primary);
   }
 
+  /* ==== 共通：プログレスバー ==== */
   .progress-shell {
     padding: 14px 0 4px;
   }
@@ -1221,6 +1204,10 @@
   const $ = (s) => document.querySelector(s),
     root = $("#root");
 
+
+  // ==================================================================
+  // 2. DATA — 候補・タグ・設定（純粋データ。ロジックはENGINEへ）
+  // ==================================================================
   // ==== 傾向(trait)の定義 ====
   const TRAITS = [
     "communication",
@@ -1572,6 +1559,35 @@
   const TOAST_DURATION_MS = 1600;
   const REFLECTION_MAX_LENGTH = 500;
   const TOP_N_DISPLAY = 5; // 結果画面・プロンプトで各カテゴリに表示する候補数
+  // 2択比較・トレードオフ回答のtrait反映重み
+  const TRAIT_WEIGHT_WIN = 1; // 勝者側候補のtrait加点
+  const TRAIT_WEIGHT_BOTH = 0.4; // 「どちらもあり」
+  const TRAIT_WEIGHT_NEITHER = -0.1; // 「どちらも微妙」
+  const PAIRWISE_BOTH_SCORE = 1; // 「どちらもあり」時に両候補へ加点するスコア
+  // MaxDiff回答のtrait反映重み
+  const MAXDIFF_TRAIT_BEST = 1;
+  const MAXDIFF_TRAIT_WORST = -0.5;
+  const MAXDIFF_TRAIT_NEUTRAL = 0.15;
+  // 旧カード仕分けログ（v0.9.5以前の履歴互換）のスコア・trait重み
+  const CARDSORT_INTEREST_SCORE = 1;
+  const CARDSORT_REJECT_SCORE = 0.5;
+  const CARDSORT_TRAIT_INTEREST = 0.6;
+  const CARDSORT_TRAIT_REJECT = -0.15;
+  // 希望キャリア形態と候補の親和ボーナス
+  const DESIRED_MODE_BONUS = { company: 0.35, individual: 0.35, creator: 0.45, founder: 0.4, hybrid: 0.15 };
+  // 業界・職種・キャリア形態タグ一致の加点（候補除外ではなく配合調整に使う）
+  const FILTER_MATCH_SCORE = { industry: 3, role: 3, careerMode: 2 };
+  // 表示件数・しきい値
+  const CLOSE_CONTEST_GAP = 4; // displayScoreがこの点差以内を「接戦」として表示
+  const UNEXPLORED_DISPLAY_COUNT = 3;
+  const AVOID_LEANING_COUNT = 7;
+  const MISFIT_DISPLAY_COUNT = 4;
+  const TRAIT_RADAR_COUNT = 8; // レーダー・trait上位の表示数
+  const MAP_POINT_COUNT = 8; // 可能性マップに置く候補数
+  const CONFIDENCE_HIGH = 0.7; // 信頼度「高」のしきい値
+  const CONFIDENCE_MID = 0.4; // 信頼度「中」のしきい値・低信頼候補の判定
+  const MAX_DESIRED_MODES = 3; // 希望キャリア形態の最大選択数
+  const MAX_FILTER_SELECT = 5; // 業界・仕事の種類フィルターの各最大選択数
   // ==== 候補データ（現在地・職種・個人活動・業界など）====
   const D = {
     status: [
@@ -2384,50 +2400,6 @@
         "学びの場を自分で作りたい人に向く可能性があります。手作り体験や学びの講座を企画し、集客から当日運営までを担う仕事です。"
     }
   };
-  const arr = (x) =>
-    x.map((v) => ({
-      id: v[0],
-      label: v[1],
-      description: v[2] || `${v[1]}に関わる領域`,
-      category: v[3] || null,
-      desc: CANDIDATE_TEXT["solo:" + v[0]]?.desc,
-      detail: CANDIDATE_TEXT["solo:" + v[0]]?.detail
-    }));
-  [
-    "status",
-    "career",
-    "interest",
-    "solo",
-    "revenue",
-    "style",
-    "soloStyle",
-    "risk",
-    "avoid"
-  ].forEach((k) => (D[k] = arr(D[k])));
-  D.industry = D.industry.split(";").map((s) => {
-    let [id, label, category] = s.split("|");
-    return {
-      id,
-      label,
-      category,
-      description: `${label}に関わる事業や組織`,
-      related_interest_areas: interestFor(category),
-      typical_job_types: jobsFor(category)
-    };
-  });
-  D.job = D.job.split(";").map((s) => {
-    let [id, label, category] = s.split("|");
-    return {
-      id,
-      label,
-      category,
-      description: `${label}として価値を届ける仕事`,
-      desc: CANDIDATE_TEXT["job:" + id]?.desc,
-      detail: CANDIDATE_TEXT["job:" + id]?.detail,
-      related_interest_areas: interestFor(category),
-      related_industries: industriesFor(category)
-    };
-  });
   // ==== 探索範囲フィルター用タグ付け（v1.2.0で候補ごとの個別タグに刷新）====
   // JOB_TAGS / SOLO_TAGS で全候補に業界タグ（i）・仕事の種類タグ（r）を個別付与する。
   // カテゴリ由来のマッピングは、タグ未定義の候補を将来追加した場合のフォールバックとして残す。
@@ -2616,6 +2588,56 @@
     local_tour_guide: { i: ["local_lifestyle"], r: ["local_small_business", "education_support"] },
     workshop_host: { i: ["education", "local_lifestyle"], r: ["education_support", "founder_management"] }
   };
+  const CATEGORY_FILTER_MIN_POOL = 8; // フィルター後の候補が少なすぎる場合は探索が成立しないため、未フィルター扱いに戻す
+  const COACH_TWITTER_DM_URL = "https://x.com/messages/compose?recipient_id=YOUR_USERNAME_HERE";
+
+  // ==================================================================
+  // 3. ENGINE — データ組み立て・スコアリング・ペア生成（DOM非依存）
+  // ==================================================================
+  const arr = (x) =>
+    x.map((v) => ({
+      id: v[0],
+      label: v[1],
+      description: v[2] || `${v[1]}に関わる領域`,
+      category: v[3] || null,
+      desc: CANDIDATE_TEXT["solo:" + v[0]]?.desc,
+      detail: CANDIDATE_TEXT["solo:" + v[0]]?.detail
+    }));
+  [
+    "status",
+    "career",
+    "interest",
+    "solo",
+    "revenue",
+    "style",
+    "soloStyle",
+    "risk",
+    "avoid"
+  ].forEach((k) => (D[k] = arr(D[k])));
+  D.industry = D.industry.split(";").map((s) => {
+    let [id, label, category] = s.split("|");
+    return {
+      id,
+      label,
+      category,
+      description: `${label}に関わる事業や組織`,
+      related_interest_areas: interestFor(category),
+      typical_job_types: jobsFor(category)
+    };
+  });
+  D.job = D.job.split(";").map((s) => {
+    let [id, label, category] = s.split("|");
+    return {
+      id,
+      label,
+      category,
+      description: `${label}として価値を届ける仕事`,
+      desc: CANDIDATE_TEXT["job:" + id]?.desc,
+      detail: CANDIDATE_TEXT["job:" + id]?.detail,
+      related_interest_areas: interestFor(category),
+      related_industries: industriesFor(category)
+    };
+  });
   D.job.forEach((x) => {
     let t = JOB_TAGS[x.id] || {};
     x.industry_tags = t.i || JOB_CATEGORY_INDUSTRY_TAGS[x.category] || [];
@@ -2676,7 +2698,6 @@
       }[c] || []
     );
   }
-  const CATEGORY_FILTER_MIN_POOL = 8; // フィルター後の候補が少なすぎる場合は探索が成立しないため、未フィルター扱いに戻す
   function traitWeights(item, phase) {
     let w = {},
       add = (names, v = 0.7) => names.forEach((n) => (w[n] = Math.max(w[n] || 0, v))),
@@ -2777,352 +2798,6 @@
     })
   );
   const freshTraits = () => Object.fromEntries(TRAITS.map((t) => [t, 0]));
-
-  // ==== アプリの状態(State) ====
-  // 回答ログは全てS.logsに集約される。S.anchorAnswers/S.pairwiseLogs/S.tradeoffLogsなどの
-  // フェーズ別配列も同じログオブジェクトを保持しており、フェーズ単位でのスコア再計算に使う。
-  // 過去に存在したS.tieLogs等の廃止済み配列は参照しないこと（再導入すると初回回答時に
-  // クラッシュした実績がある）。S.cardSortLogsはv0.9.5以前に保存された履歴のスコア再計算
-  // 互換のためだけに残しており、カード仕分け画面自体は現行フローには存在しない。
-  let S = {
-    view: "home",
-    status: null,
-    career: null,
-    desiredCareerModes: [],
-    scopeFilter: { industryIds: [], roleIds: [] },
-    explorationFilters: { industryIds: [], roleIds: [], strength: "broad" },
-    mode: null,
-    experienceMode: null,
-    sourceSessionId: null,
-    phase: null,
-    index: 0,
-    queue: [],
-    phaseQueues: {},
-    scores: {},
-    selected: {},
-    logs: [],
-    anchorAnswers: [],
-    cardSortLogs: [],
-    maxDiffLogs: [],
-    pairwiseLogs: [],
-    tradeoffLogs: [],
-    reflectionAnswers: [],
-    answerTrail: [],
-    navigationStack: [],
-    editingAnswer: null,
-    rankings: {},
-    avoid: [],
-    userTraits: freshTraits(),
-    questionCount: 0,
-    isEarlyResult: false
-  };
-  const label = (list, id) => (list.find((x) => x.id === id) || {}).label || id;
-
-  // ==== 画面遷移・レンダリング（現在地〜キャリア形態選択）====
-  function screen(html) {
-    root.innerHTML = `<section class="screen">${html}</section>`;
-    scrollTo(0, 0);
-  }
-  function home() {
-    progress(0);
-    screen(
-      `<div class="hero"><div class="eyebrow">CAREER PAIRWISE LAB · v1.2.1</div><h1>自分でも気づいていない、<br>働き方の傾向を探ろう。</h1><p class="lead">4択比較や2択トレードオフに答えるだけで、<br>自分の判断軸が見えてくる探索ツールです。<br>結果は正解ではなく、次に調べる仮説として使ってください。</p><div class="mode-grid"><div class="mode-card"><span class="time-badge">⏱ 12〜15分</span><h3>標準版</h3><p>まず傾向と可能性マップを見る</p><button class="btn primary" data-mode-start="standard">標準版で始める</button></div><div class="mode-card"><span class="time-badge">⏱ 25〜35分</span><h3>がっつり版</h3><p>迷い・接戦・価値観まで深く見る</p><button class="btn primary" data-mode-start="deep">がっつり版で始める</button></div></div><p class="note">個人情報は入力しません。回答は端末内だけに保存され、外部へ送信されません。</p></div>`
-    );
-    root.querySelectorAll("[data-mode-start]").forEach(
-      (b) =>
-        (b.onclick = () => {
-          S.experienceMode = b.dataset.modeStart;
-          select("status");
-        })
-    );
-  }
-  function select(type) {
-    S.view = type;
-    let isStatus = type === "status",
-      list = D[type];
-    progress(isStatus ? 0.05 : 0.1);
-    screen(
-      `<div class="eyebrow">STEP 1 / 現在地</div><h2>今のあなたに近い状態を選んでください</h2><p class="lead">現在の状況だけを選びます。次の画面で、将来気になる方向を別に選びます。</p><div class="choice-list">${list.map((x) => `<button class="choice" data-id="${x.id}"><strong>${x.label}</strong><span>${x.description}</span></button>`).join("")}</div><div class="navrow"><button class="link" id="back">← 戻る</button><button class="link" id="reset">最初から</button></div>`
-    );
-    root.querySelectorAll(".choice").forEach(
-      (b) =>
-        (b.onclick = () => {
-          S.status = b.dataset.id;
-          selectDesiredCareerModes();
-        })
-    );
-    $("#back").onclick = home;
-    $("#reset").onclick = reset;
-  }
-  function desiredModesOf(session) {
-    let value = session.desired_career_modes || (session.career_mode ? [session.career_mode] : []);
-    return value
-      .map((x) =>
-        typeof x === "string"
-          ? DESIRED_CAREER_MODES.find((m) => m.id === x) || { id: x, label: x }
-          : x
-      )
-      .filter(Boolean);
-  }
-  // 旧履歴（exploration_filtersを持たない記録）を開いた場合は広め設定として扱う。
-  function explorationFiltersOf(session) {
-    let f = (session && session.exploration_filters) || {};
-    return {
-      industryIds: f.industry_ids || [],
-      roleIds: f.role_ids || [],
-      strength: f.strength || "broad"
-    };
-  }
-  function selectDesiredCareerModes() {
-    S.view = "desiredCareerModes";
-    let chosen = new Set(S.desiredCareerModes);
-    progress(0.1);
-    screen(
-      `<div class="eyebrow">STEP 2 / 希望するキャリア形態</div><h2>今、比較してみたいキャリアの形を選んでください</h2><p class="lead">気になっている働き方・生き方を1〜3つ選んでください。<br>これは候補を絞り込むためではなく、比較候補の出し方を少し調整するために使います。</p><div class="choice-list">${DESIRED_CAREER_MODES.map((x) => `<button class="choice ${chosen.has(x.id) ? "chosen" : ""}" data-desired="${x.id}"><strong>${x.label}</strong><span>${x.description}</span></button>`).join("")}</div><p class="note" id="desiredHelp">${chosen.size}/3 選択中</p><button class="btn primary" id="desiredNext" ${chosen.size ? "" : "disabled"}>この方向で探索する</button><div class="navrow"><button class="link" id="back">← 現在地へ</button><button class="link" id="reset">最初から</button></div>`
-    );
-    root.querySelectorAll("[data-desired]").forEach(
-      (b) =>
-        (b.onclick = () => {
-          let id = b.dataset.desired;
-          if (chosen.has(id)) chosen.delete(id);
-          else if (chosen.size < 3) chosen.add(id);
-          else {
-            $("#desiredHelp").textContent = "選べるのは最大3つです";
-            return;
-          }
-          b.classList.toggle("chosen", chosen.has(id));
-          $("#desiredHelp").textContent = `${chosen.size}/3 選択中`;
-          $("#desiredNext").disabled = !chosen.size;
-        })
-    );
-    $("#desiredNext").onclick = () => {
-      S.desiredCareerModes = [...chosen];
-      S.career = S.desiredCareerModes[0] || null;
-      let company = S.desiredCareerModes.some((x) =>
-          ["company_employee", "public_org", "hybrid"].includes(x)
-        ),
-        solo = S.desiredCareerModes.some((x) =>
-          ["freelance", "small_business", "creator", "startup_founder"].includes(x)
-        );
-      S.mode = company && !solo ? "company" : "solo";
-      selectExplorationFilters();
-    };
-    $("#back").onclick = () => select("status");
-    $("#reset").onclick = reset;
-  }
-  function selectExplorationFilters() {
-    S.view = "explorationFilters";
-    let f = S.explorationFilters || { industryIds: [], roleIds: [], strength: "broad" },
-      industryChosen = new Set(f.industryIds),
-      roleChosen = new Set(f.roleIds),
-      strength = f.strength || "balanced";
-    let renderCheck = (item, chosenSet, attr) =>
-      `<label class="check"><input type="checkbox" data-${attr}="${item.id}" ${chosenSet.has(item.id) ? "checked" : ""}><span><b>${esc(item.label)}</b><small>${esc(item.description)}</small></span></label>`;
-    function summaryHtml() {
-      let industryLabels = INDUSTRY_FILTERS.filter((x) => industryChosen.has(x.id)).map((x) => x.label),
-        roleLabels = ROLE_FILTERS.filter((x) => roleChosen.has(x.id)).map((x) => x.label),
-        strengthLabel = FILTER_STRENGTH_OPTIONS.find((x) => x.id === strength)?.label || "";
-      return `<div class="panel" id="explorationSummary"><h3>今回の探索設定</h3><p class="note"><b>業界・業種：</b><br>${industryLabels.length ? industryLabels.map(esc).join(" / ") : "指定なし"}</p><p class="note"><b>職種：</b><br>${roleLabels.length ? roleLabels.map(esc).join(" / ") : "指定なし"}</p><p class="note"><b>探索の広さ：</b><br>${esc(strengthLabel)}</p><p class="note">この設定をもとに、4択比較に出す候補の配合を調整します。候補を完全に消すものではありません。</p></div>`;
-    }
-    function updateSummary() {
-      let el = $("#explorationSummary");
-      if (el) el.outerHTML = summaryHtml();
-    }
-    function bindEvents() {
-      root.querySelectorAll("[data-industry]").forEach(
-        (cb) =>
-          (cb.onchange = () => {
-            let id = cb.dataset.industry;
-            if (cb.checked) {
-              if (industryChosen.size >= 5) {
-                cb.checked = false;
-                toast("業界・業種は最大5つまでです");
-                return;
-              }
-              industryChosen.add(id);
-            } else industryChosen.delete(id);
-            updateSummary();
-          })
-      );
-      root.querySelectorAll("[data-role]").forEach(
-        (cb) =>
-          (cb.onchange = () => {
-            let id = cb.dataset.role;
-            if (cb.checked) {
-              if (roleChosen.size >= 5) {
-                cb.checked = false;
-                toast("職種は最大5つまでです");
-                return;
-              }
-              roleChosen.add(id);
-            } else roleChosen.delete(id);
-            updateSummary();
-          })
-      );
-      root.querySelectorAll("[data-strength]").forEach(
-        (b) =>
-          (b.onclick = () => {
-            strength = b.dataset.strength;
-            root
-              .querySelectorAll("[data-strength]")
-              .forEach((x) => x.classList.toggle("chosen", x.dataset.strength === strength));
-            $("#strengthDesc").textContent =
-              FILTER_STRENGTH_OPTIONS.find((x) => x.id === strength)?.description || "";
-            updateSummary();
-          })
-      );
-      $("#openWide").onclick = () => {
-        S.explorationFilters = { industryIds: [], roleIds: [], strength: "broad" };
-        S.navigationStack.push({ screen: "explorationFilters" });
-        transition(phases()[0]);
-      };
-      $("#explorationNext").onclick = () => {
-        S.explorationFilters = {
-          industryIds: [...industryChosen],
-          roleIds: [...roleChosen],
-          strength: industryChosen.size || roleChosen.size ? strength : "broad"
-        };
-        S.navigationStack.push({ screen: "explorationFilters" });
-        transition(phases()[0]);
-      };
-      $("#back").onclick = () => selectDesiredCareerModes();
-      $("#reset").onclick = reset;
-    }
-    function render() {
-      progress(0.12);
-      screen(
-        `<div class="eyebrow">STEP 3 / 探索範囲を選ぶ</div><h2>探索範囲を選ぶ</h2><p class="lead">気になる業界・業種や職種があれば、ここで指定できます。<br>選んだ領域を少し多めに出しつつ、他の可能性も混ぜて比較します。<br>まだ決まっていない場合は「広く見たい」を選んでください。</p><button class="btn ghost" id="openWide" style="width:100%;margin-bottom:18px">まだ広く見たい（絞らずにこのまま始める）</button><details class="panel" id="industryPanel"><summary>業界・業種を選ぶ（最大5つ）</summary><p class="note">気になる業界があれば最大5つまで選べます。</p><div class="checks">${INDUSTRY_FILTERS.map((x) => renderCheck(x, industryChosen, "industry")).join("")}</div></details><details class="panel" id="rolePanel"><summary>探索したい仕事の種類（最大5つ）</summary><p class="note">気になる仕事の種類があれば最大5つまで選べます。</p><div class="checks">${ROLE_FILTERS.map((x) => renderCheck(x, roleChosen, "role")).join("")}</div></details><div class="panel"><h3>探索の広さ</h3><p class="note">広め / バランス / 強め から選べます。</p><div class="or" id="strengthPicker">${FILTER_STRENGTH_OPTIONS.map((x) => `<button data-strength="${x.id}" class="${strength === x.id ? "chosen" : ""}">${esc(x.label)}</button>`).join("")}</div><p class="note" id="strengthDesc">${esc(FILTER_STRENGTH_OPTIONS.find((x) => x.id === strength)?.description || "")}</p></div>${summaryHtml()}<button class="btn primary" id="explorationNext">この設定で進む</button><div class="navrow"><button class="link" id="back">← 希望キャリア形態へ</button><button class="link" id="reset">最初から</button></div>`
-      );
-      bindEvents();
-    }
-    render();
-  }
-  const phases = () =>
-    S.experienceMode === "standard"
-      ? ["anchor", "maxDiff", "pairwise", S.mode === "company" ? "avoid" : "risk"]
-      : S.experienceMode === "deep"
-        ? ["anchor", "maxDiff", "pairwise", "tradeoff", S.mode === "company" ? "avoid" : "risk"]
-        : S.experienceMode === "explore_more"
-          ? ["additionalMaxDiff"]
-          : ["additionalMaxDiff", "closePairwise", "tradeoff"];
-  const names = {
-    anchor: "アンカー質問",
-    maxDiff: "MaxDiff",
-    additionalMaxDiff: "追加MaxDiff",
-    pairwise: "接戦ペアワイズ",
-    closePairwise: "追加接戦ペアワイズ",
-    tradeoff: "トレードオフ比較",
-    avoid: "避けたい要素",
-    risk: "個人活動リスク",
-    reflection: "内省質問"
-  };
-  const intros = {
-    anchor: [
-      "01",
-      "アンカー質問",
-      "まずは、働き方や価値観の初期傾向を見ます。",
-      "実現可能性ではなく、今どちらに惹かれるかで選んでください。"
-    ],
-    maxDiff: [
-      "02",
-      "MaxDiff",
-      "4つの中から、今いちばん気になるものと、今はいちばん違うと感じるものを選んでください。",
-      "選んだ後でも、次へ進む前なら変更できます。"
-    ],
-    additionalMaxDiff: [
-      "＋1",
-      "追加MaxDiff",
-      "接戦候補と未探索候補を4枚ずつ比べます。",
-      "標準版では見えにくかった差を探します。"
-    ],
-    pairwise: [
-      "03",
-      "接戦ペアワイズ",
-      "ここでは、4択比較で接戦だった候補を2択で確認します。",
-      "今どちらに惹かれるかで選んでください。"
-    ],
-    closePairwise: [
-      "＋2",
-      "追加接戦ペアワイズ",
-      "標準版で迷いが残った候補を追加で比較します。",
-      "同じ診断のやり直しではなく、接戦の深掘りです。"
-    ],
-    tradeoff: [
-      "04",
-      "トレードオフ比較",
-      "ここでは、働き方の価値観が分かれる組み合わせを比べます。",
-      "どちらも完璧ではない前提で、より受け入れたい方を選びます。"
-    ],
-    avoid: [
-      "05",
-      "避けたい要素",
-      "入社前に確認したい条件をチェックします。",
-      "気になるものだけ選びます。"
-    ],
-    risk: [
-      "05",
-      "避けたいリスク",
-      "個人活動前に確認したいリスクをチェックします。",
-      "気になるものだけ選びます。"
-    ],
-    reflection: [
-      "06",
-      "内省質問",
-      "比較では拾えない違和感や驚きを、自分の言葉で残します。",
-      "任意回答です。空欄でも進めます。"
-    ],
-    result: [
-      "RESULT",
-      "結果",
-      "これは回答傾向をもとにした探索用の仮説です。",
-      "追加で調べたり、人に話を聞いたりするための地図として使ってください。"
-    ]
-  };
-  function activeConfig() {
-    return S.experienceMode === "deep_continuation"
-      ? MODE_CONFIG.deepContinuation
-      : MODE_CONFIG[S.experienceMode || "standard"];
-  }
-  function desiredModeExplanation() {
-    let ids = (S.desiredCareerModes || []).filter((x) => x !== "open_exploration");
-    if (!ids.length) return "";
-    let labels = ids
-      .map((id) => DESIRED_CAREER_MODES.find((m) => m.id === id)?.label)
-      .filter(Boolean);
-    return `今回の比較では、選んだキャリア形態を少し多めに出しつつ、他の可能性も混ぜて表示します。<br><b>今回やや多めに出す候補：</b><br>${labels.map((l) => "・" + esc(l)).join("<br>")}<br>ただし、比較の幅を保つため、創作・個人事業・起業などの候補も一部混ぜます。`;
-  }
-  function transition(phase) {
-    saveSession();
-    let d = intros[phase],
-      list = phases(),
-      i = phase === "result" ? list.length : Math.max(0, list.indexOf(phase)),
-      cfg = activeConfig(),
-      continuation = S.experienceMode === "deep_continuation",
-      exploreMore = S.experienceMode === "explore_more",
-      progressLabel = exploreMore
-        ? `未探索チェック<br>追加回答 ${S.questionCount} / 約${cfg.maxAnswers}`
-        : continuation
-          ? `がっつり版：追加分析 ${i + 1} / ${list.length + 1}<br>追加回答 ${S.questionCount} / 約${cfg.maxAnswers}`
-          : `${cfg.label}：ステップ ${i + 3} / ${list.length + 4}<br>回答 ${S.questionCount} / 約${cfg.maxAnswers}`,
-      modeNote = ["maxDiff", "additionalMaxDiff"].includes(phase) ? desiredModeExplanation() : "",
-      scopeNote =
-        (S.scopeFilter?.industryIds || []).length || (S.scopeFilter?.roleIds || []).length
-          ? "最初に選んだ探索範囲の中で、候補を早期除外せず情報量の高い質問を優先します。"
-          : "候補を早期除外せず、情報量の高い質問を優先します。";
-    if (exploreMore && phase === "additionalMaxDiff")
-      d = [
-        "＋",
-        "未探索チェック",
-        "まだ比較していない候補を中心に、4択で5問だけ追加比較します。",
-        "既に見えている傾向は前提にせず、今の気になり度で選んでください。"
-      ];
-    progress(phase === "result" ? 1 : i / list.length);
-    screen(
-      `<div class="section-intro"><div class="section-no">${d[0]}</div><div class="eyebrow">${progressLabel}</div><h2>次は「${d[1]}」${phase === "result" ? "です" : "を行います"}</h2><p class="lead">${d[2]}</p>${phase === "result" ? "" : `<p class="note">${scopeNote}</p>`}${modeNote ? `<p class="note">${modeNote}</p>` : ""}<div class="tip"><b>回答のコツ</b><br>${d[3]}</div><button class="btn primary" id="next">次へ</button><div class="navrow"><span></span><button class="link" id="reset">最初から</button></div></div>`
-    );
-    $("#next").onclick = () => (phase === "result" ? complete() : startPhase(phase));
-    $("#reset").onclick = reset;
-  }
 
   // ==== 候補選定アルゴリズム（affinity/多様性/探索のバランス調整）====
   function shuffle(items) {
@@ -3295,7 +2970,7 @@
     );
   }
   function getConfidenceLabel(confidence) {
-    return confidence >= 0.7 ? "高" : confidence >= 0.4 ? "中" : "低";
+    return confidence >= CONFIDENCE_HIGH ? "高" : confidence >= CONFIDENCE_MID ? "中" : "低";
   }
   function normalizeTraitScores(rawTraits, answerCount) {
     let confidence = answerCount / (answerCount + TRAIT_CONFIDENCE_SMOOTHING),
@@ -3378,21 +3053,21 @@
           A.rawScore += PAIRWISE_WIN_SCORE;
           A.wins++;
           B.losses++;
-          applyTraitLog(a, 1);
+          applyTraitLog(a, TRAIT_WEIGHT_WIN);
         } else if (log.answer === "b") {
           B.rawScore += PAIRWISE_WIN_SCORE;
           B.wins++;
           A.losses++;
-          applyTraitLog(b, 1);
+          applyTraitLog(b, TRAIT_WEIGHT_WIN);
         } else {
           A.draws++;
           B.draws++;
-          let w = log.answer === "both" ? 0.4 : -0.1;
+          let w = log.answer === "both" ? TRAIT_WEIGHT_BOTH : TRAIT_WEIGHT_NEITHER;
           applyTraitLog(a, w);
           applyTraitLog(b, w);
           if (log.answer === "both") {
-            A.rawScore++;
-            B.rawScore++;
+            A.rawScore += PAIRWISE_BOTH_SCORE;
+            B.rawScore += PAIRWISE_BOTH_SCORE;
           }
         }
       };
@@ -3401,13 +3076,13 @@
     S.cardSortLogs.forEach((log) => {
       let item = careerItem(log.candidateId, log.label),
         s = statFor(item.id, item.label),
-        w = log.choice === "interest" ? 0.6 : log.choice === "reject" ? -0.15 : 0;
+        w = log.choice === "interest" ? CARDSORT_TRAIT_INTEREST : log.choice === "reject" ? CARDSORT_TRAIT_REJECT : 0;
       s.played++;
       if (log.choice === "interest") {
-        s.rawScore += 1;
+        s.rawScore += CARDSORT_INTEREST_SCORE;
         s.wins++;
       } else if (log.choice === "reject") {
-        s.rawScore -= 0.5;
+        s.rawScore -= CARDSORT_REJECT_SCORE;
         s.losses++;
       } else s.draws++;
       applyTraitLog(item, w);
@@ -3421,85 +3096,37 @@
       B.wins += 3;
       B.played += 3;
       B.bestCount++;
-      applyTraitLog(best, 1);
+      applyTraitLog(best, MAXDIFF_TRAIT_BEST);
       W.rawScore += MAXDIFF_SCORING.WORST_SCORE;
       W.losses += 3;
       W.played += 3;
       W.worstCount++;
-      applyTraitLog(worst, -0.5);
+      applyTraitLog(worst, MAXDIFF_TRAIT_WORST);
       log.neutral_ids.forEach((id) => {
         let item = careerItem(id),
           s = statFor(id, item.label);
         s.rawScore += MAXDIFF_SCORING.NEUTRAL_SCORE;
         s.wins += MAXDIFF_SCORING.NEUTRAL_OVER_WORST_WEIGHT;
         s.played += MAXDIFF_SCORING.NEUTRAL_OVER_WORST_WEIGHT;
-        applyTraitLog(item, 0.15);
+        applyTraitLog(item, MAXDIFF_TRAIT_NEUTRAL);
       });
     });
     S.tradeoffLogs.forEach((log) => {
       let a = { trait_weights: log.aTraits || {} },
         b = { trait_weights: log.bTraits || {} };
-      if (log.answer === "a") applyTraitLog(a, 1);
-      else if (log.answer === "b") applyTraitLog(b, 1);
+      if (log.answer === "a") applyTraitLog(a, TRAIT_WEIGHT_WIN);
+      else if (log.answer === "b") applyTraitLog(b, TRAIT_WEIGHT_WIN);
       else if (log.answer === "both") {
-        applyTraitLog(a, 0.4);
-        applyTraitLog(b, 0.4);
+        applyTraitLog(a, TRAIT_WEIGHT_BOTH);
+        applyTraitLog(b, TRAIT_WEIGHT_BOTH);
       } else if (log.answer === "neither") {
-        applyTraitLog(a, -0.1);
-        applyTraitLog(b, -0.1);
+        applyTraitLog(a, TRAIT_WEIGHT_NEITHER);
+        applyTraitLog(b, TRAIT_WEIGHT_NEITHER);
       }
     });
     Object.values(S.scores.career).forEach(finalizeStat);
     S.rankings.career = ranking("career");
   }
-  function pushTrail(entry) {
-    S.answerTrail.push(entry);
-  }
-  function removeLastMatching(array, predicate) {
-    for (let i = array.length - 1; i >= 0; i--)
-      if (predicate(array[i])) {
-        array.splice(i, 1);
-        return;
-      }
-  }
-  function goBack() {
-    let entry = S.answerTrail.pop();
-    if (!entry) {
-      let nav = S.navigationStack.pop();
-      if (nav?.screen === "explorationFilters") selectExplorationFilters();
-      else if (nav?.screen === "desiredCareerModes") selectDesiredCareerModes();
-      return;
-    }
-    S.questionCount = Math.max(0, S.questionCount - 1);
-    if (entry.type === "pair") {
-      removeLastMatching(
-        S.logs,
-        (x) => x === entry.payload || x.questionKey === entry.payload.questionKey
-      );
-      if (entry.phase === "anchor")
-        removeLastMatching(S.anchorAnswers, (x) => x.questionKey === entry.payload.questionKey);
-      if (["pairwise", "closePairwise"].includes(entry.phase))
-        removeLastMatching(S.pairwiseLogs, (x) => x.questionKey === entry.payload.questionKey);
-      if (entry.phase === "tradeoff")
-        removeLastMatching(S.tradeoffLogs, (x) => x.questionKey === entry.payload.questionKey);
-    } else if (entry.type === "maxDiff")
-      removeLastMatching(S.maxDiffLogs, (x) => x.question_id === entry.payload.question_id);
-    else if (entry.type === "reflection")
-      removeLastMatching(S.reflectionAnswers, (x) => x.id === entry.payload.id);
-    else if (entry.type === "avoid") S.avoid = [...(entry.payload.selected || [])];
-    recalculateAllScores();
-    saveSession();
-    S.phase = entry.phase;
-    S.index = entry.index;
-    S.queue = S.phaseQueues[entry.phase] || S.queue;
-    S.editingAnswer = entry;
-    if (entry.type === "pair") pair();
-    else if (entry.type === "maxDiff") maxDiffScreen();
-    else if (entry.type === "reflection") reflectionScreen();
-    else checks(candidates(entry.phase));
-  }
-
-  // ==== 質問フェーズの進行管理（アンカー/MaxDiff/ペアワイズ/トレードオフ）====
   function warmupPairs() {
     let pool = careerPool(),
       get = (domain, id) => pool.find((x) => x.domain === domain && x.originalId === id);
@@ -3534,24 +3161,24 @@
       ids.some((x) => ["company_employee", "public_org"].includes(x)) &&
       item.domain === "company"
     )
-      score += 0.35;
+      score += DESIRED_MODE_BONUS.company;
     if (
       ids.some((x) => ["freelance", "small_business"].includes(x)) &&
       item.domain === "individual"
     )
-      score += 0.35;
+      score += DESIRED_MODE_BONUS.individual;
     if (
       ids.includes("creator") &&
       /music|illustration|video|writing|photo|design|content|handmade/.test(item.id)
     )
-      score += 0.45;
+      score += DESIRED_MODE_BONUS.creator;
     if (
       ids.includes("startup_founder") &&
       (/business|product|new_business|consult/.test(item.id) ||
         (item.trait_weights?.business_building || 0) > 0.6)
     )
-      score += 0.4;
-    if (ids.includes("hybrid")) score += 0.15;
+      score += DESIRED_MODE_BONUS.founder;
+    if (ids.includes("hybrid")) score += DESIRED_MODE_BONUS.hybrid;
     return score / ids.length;
   }
   // 業界・業種・職種フィルターと候補タグの一致度を採点する（除外ではなく配合調整に使う）
@@ -3560,9 +3187,9 @@
   }
   function scoreCandidateByFilters(candidate, filters) {
     let score = 0;
-    if (hasAny(candidate.industry_tags, filters.industryIds)) score += 3;
-    if (hasAny(candidate.role_tags, filters.roleIds)) score += 3;
-    if (hasAny(candidate.career_mode_tags, filters.desiredCareerModes)) score += 2;
+    if (hasAny(candidate.industry_tags, filters.industryIds)) score += FILTER_MATCH_SCORE.industry;
+    if (hasAny(candidate.role_tags, filters.roleIds)) score += FILTER_MATCH_SCORE.role;
+    if (hasAny(candidate.career_mode_tags, filters.desiredCareerModes)) score += FILTER_MATCH_SCORE.careerMode;
     return score;
   }
   function activeExplorationFilters() {
@@ -3692,106 +3319,6 @@
     }
     return sets;
   }
-  function maxDiffScreen() {
-    saveSession();
-    let set = S.queue[S.index],
-      edit = S.editingAnswer?.type === "maxDiff" ? S.editingAnswer.payload : null,
-      best = edit?.best_id || null,
-      worst = edit?.worst_id || null;
-    function missingText() {
-      return !best && !worst
-        ? "「一番気になる」と「一番違う」をそれぞれ1つ選んでください。"
-        : !best
-          ? "「一番気になる」も選ぶと次へ進めます。"
-          : !worst
-            ? "「一番違う」も選ぶと次へ進めます。"
-            : "";
-    }
-    function update() {
-      let bestLabel = best ? set.find((x) => x.id === best)?.label : null,
-        worstLabel = worst ? set.find((x) => x.id === worst)?.label : null,
-        statusEls = root.querySelectorAll(".md-status-item");
-      statusEls[0].classList.toggle("set", !!best);
-      statusEls[0].textContent = `★ 選択中：${bestLabel || "未選択"}`;
-      statusEls[1].classList.toggle("set", !!worst);
-      statusEls[1].textContent = `✕ 選択中：${worstLabel || "未選択"}`;
-      root.querySelectorAll(".maxdiff-item").forEach((item) => {
-        let id = item.dataset.id;
-        item.classList.toggle("best", id === best);
-        item.classList.toggle("worst", id === worst);
-        item.querySelector(".md-btn.best").classList.toggle("active", id === best);
-        item.querySelector(".md-btn.worst").classList.toggle("active", id === worst);
-      });
-      let warn = root.querySelector(".md-warning"),
-        missing = missingText();
-      warn.hidden = !missing;
-      warn.textContent = missing;
-      $("#mdDone").disabled = !(best && worst);
-    }
-    function render() {
-      progress();
-      screen(
-        `<div class="eyebrow">${activeConfig().label} · ${names[S.phase]} ${S.index + 1} / ${S.queue.length}</div><h2>4つの中から選んでください</h2><p class="lead">4つの中から、今いちばん気になるものと、今はいちばん違うと感じるものを選んでください。<br>選んだ後でも、次へ進む前なら変更できます。</p><div class="md-status"><span class="md-status-item"></span><span class="md-status-item"></span></div><div class="maxdiff-grid">${set.map((x) => `<div class="maxdiff-item" data-id="${x.id}"><b>${x.label}</b><span class="candidate-desc">${x.desc || x.description}</span><div class="md-actions"><button class="md-btn best" data-role="best" data-id="${x.id}">一番気になる ★</button><button class="md-btn worst" data-role="worst" data-id="${x.id}">今は違う ✕</button></div></div>`).join("")}</div><p class="note md-warning"></p><div class="md-sticky"><button class="btn primary" id="mdDone">次へ</button><div class="navrow"><button class="link" id="back">← 戻る</button><button class="link" id="mdEarly">途中結果を見る</button></div></div>`
-      );
-      root.querySelectorAll("[data-role]").forEach(
-        (b) =>
-          (b.onclick = () => {
-            let id = b.dataset.id,
-              role = b.dataset.role;
-            if (role === "best") {
-              if (best === id) best = null;
-              else {
-                best = id;
-                if (worst === id) worst = null;
-              }
-            } else {
-              if (worst === id) worst = null;
-              else {
-                worst = id;
-                if (best === id) best = null;
-              }
-            }
-            update();
-          })
-      );
-      $("#mdDone").onclick = () => {
-        let a = set.find((x) => x.id === best),
-          b = set.find((x) => x.id === worst),
-          neutral = set.filter((x) => x.id !== best && x.id !== worst),
-          edges = [
-            ...neutral.map((x) => ({ winner: best, loser: x.id, weight: 1 })),
-            { winner: best, loser: worst, weight: 1 },
-            ...neutral.map((x) => ({ winner: x.id, loser: worst, weight: 0.7 }))
-          ],
-          log = {
-            type: "maxdiff",
-            phase: S.phase,
-            question_id: `${S.phase}_${S.index}`,
-            option_ids: set.map((x) => x.id),
-            best_id: best,
-            best: a.label,
-            worst_id: worst,
-            worst: b.label,
-            neutral_ids: neutral.map((x) => x.id),
-            generated_pairwise_edges: edges,
-            candidates: set.map((x) => x.label)
-          };
-        S.maxDiffLogs.push(log);
-        pushTrail({ type: "maxDiff", phase: S.phase, index: S.index, payload: log });
-        recalculateAllScores();
-        S.questionCount++;
-        S.index++;
-        S.editingAnswer = null;
-        saveSession();
-        if (S.index < S.queue.length) maxDiffScreen();
-        else finishPhase();
-      };
-      $("#back").onclick = goBack;
-      $("#mdEarly").onclick = earlyResult;
-      update();
-    }
-    render();
-  }
   function pairwisePairs(count) {
     let pool = careerPool(),
       ranked = ranking("career")
@@ -3866,221 +3393,6 @@
       ];
     });
   }
-  function reflectionScreen() {
-    let q = REFLECTION_QUESTIONS[S.index],
-      edit = S.editingAnswer?.type === "reflection" ? S.editingAnswer.payload : null;
-    progress();
-    screen(
-      `<div class="eyebrow">${activeConfig().label} · 内省 ${S.index + 1} / ${REFLECTION_QUESTIONS.length}</div><h2>${q.text}</h2><p class="note">任意回答です。個人情報は入力しないでください。</p><textarea class="reflection" id="reflectionText" maxlength="${REFLECTION_MAX_LENGTH}" placeholder="一言でも、空欄でも構いません">${esc(edit?.answer || "")}</textarea><button class="btn primary" id="reflectionNext">${S.index === REFLECTION_QUESTIONS.length - 1 ? "結果へ" : "次へ"}</button><button class="btn ghost" id="back" style="width:100%;margin-top:10px">戻る</button>`
-    );
-    $("#reflectionNext").onclick = () => {
-      let log = { id: q.id, text: q.text, answer: $("#reflectionText").value.trim() };
-      S.reflectionAnswers.push(log);
-      pushTrail({ type: "reflection", phase: S.phase, index: S.index, payload: log });
-      S.questionCount++;
-      S.index++;
-      S.editingAnswer = null;
-      if (S.index < REFLECTION_QUESTIONS.length) reflectionScreen();
-      else finishPhase();
-    };
-    $("#back").onclick = goBack;
-  }
-  function startPhase(phase) {
-    S.phase = phase;
-    S.index = 0;
-    S.editingAnswer = null;
-    let cfg = activeConfig(),
-      list;
-    if (["avoid", "risk"].includes(phase)) {
-      S.phaseQueues[phase] = candidates(phase);
-      checks(S.phaseQueues[phase]);
-      return;
-    }
-    if (["maxDiff", "additionalMaxDiff"].includes(phase)) {
-      let count = phase === "maxDiff" ? cfg.flow.maxDiff : cfg.flow.additionalMaxDiff;
-      S.queue = maxDiffSets(count);
-      S.phaseQueues[phase] = S.queue;
-      list = [...new Set(S.queue.flat())];
-      S.selected[phase] = list;
-      ensureStats("career", list);
-      maxDiffScreen();
-      return;
-    }
-    if (phase === "reflection") {
-      S.phaseQueues[phase] = REFLECTION_QUESTIONS;
-      reflectionScreen();
-      return;
-    }
-    if (phase === "anchor") {
-      S.queue = anchorPairs(cfg.flow.anchor);
-    } else if (["pairwise", "closePairwise"].includes(phase)) {
-      let count = phase === "pairwise" ? cfg.flow.pairwise : cfg.flow.closePairwise;
-      S.queue = pairwisePairs(count);
-    } else S.queue = tradeoffPairs(cfg.flow.tradeoff);
-    S.phaseQueues[phase] = S.queue;
-    list = [...new Set(S.queue.flatMap((x) => x.slice(0, 2)))];
-    S.selected[phase] = list;
-    if (phase !== "tradeoff") ensureStats("career", list);
-    pair();
-  }
-  function progress(extra) {
-    let p = extra ?? S.questionCount / TIME_BUDGET_CONFIG.maxTotalQuestions;
-    let shell = $(".progress-shell");
-    shell.hidden = !p;
-    $(".progress i").style.width = `${Math.min(1, p) * 100}%`;
-    let phaseEl = $("#progressPhase"),
-      countEl = $("#progressCount");
-    if (S.phase && names[S.phase]) {
-      phaseEl.textContent = `現在：${names[S.phase]}`;
-      let remain = Math.max(0, (activeConfig().maxAnswers || 0) - S.questionCount);
-      countEl.textContent = remain ? `あと目安${remain}問` : "";
-    } else {
-      phaseEl.textContent = "";
-      countEl.textContent = "";
-    }
-  }
-  function pair() {
-    saveSession();
-    let [a, b, kind] = S.queue[S.index],
-      cfg = activeConfig(),
-      continuation = S.experienceMode === "deep_continuation";
-    progress();
-    let intent =
-        {
-          anchor: "まずは、働き方や価値観の初期傾向を見ます。",
-          pairwise: "4択比較で接戦だった候補を2択で確認します。",
-          tradeoff: "働き方の価値観が分かれる組み合わせを比べます。"
-        }[kind] || "これまでの回答傾向を深掘りします。",
-      prefix = continuation ? "がっつり版：追加分析" : cfg.label;
-    screen(
-      `<div class="eyebrow">${prefix}<br>${continuation ? "追加回答" : "回答"} ${S.questionCount + 1} / 約${cfg.maxAnswers}<br>現在：${names[S.phase]}</div><h2>${kind === "tradeoff" ? "より受け入れたい働き方は？" : "今、より惹かれるのは？"}</h2><p class="note">${intent}</p><div class="pair"><button class="pair-card trade-card" data-answer="a"><b>${a.label}</b><span>${a.description}</span></button><button class="pair-card trade-card" data-answer="b"><b>${b.label}</b><span>${b.description}</span></button></div><div class="or"><button data-answer="both">どちらもあり</button><button data-answer="neither">どちらも微妙</button><button data-answer="unknown">わからない</button></div><button class="btn ghost" id="early" style="width:100%;margin-top:12px">途中結果を見る</button><div class="navrow"><button class="link" id="back">← 戻る</button><button class="link" id="reset">最初から</button></div>`
-    );
-    root.querySelectorAll("[data-answer]").forEach(
-      (x) =>
-        (x.onclick = () => {
-          let ans = x.dataset.answer;
-          if (["pairwise", "closePairwise"].includes(S.phase) && ["a", "b"].includes(ans))
-            reasonTagScreen(ans, a, b, kind);
-          else answer(ans, a, b, kind);
-        })
-    );
-    $("#early").onclick = earlyResult;
-    $("#back").onclick = backPair;
-    $("#reset").onclick = reset;
-  }
-  function updateTraits(item, weight, sign = 1) {
-    Object.entries(item.trait_weights || {}).forEach(
-      ([t, w]) => (S.userTraits[t] = (S.userTraits[t] || 0) + w * weight * sign)
-    );
-  }
-  function applyAnswer(ans, a, b, sign = 1) {
-    if (S.phase === "tradeoff") {
-      if (ans === "a") updateTraits(a, 1, sign);
-      else if (ans === "b") updateTraits(b, 1, sign);
-      else if (ans === "both") {
-        updateTraits(a, 0.4, sign);
-        updateTraits(b, 0.4, sign);
-      } else if (ans === "neither") {
-        updateTraits(a, -0.1, sign);
-        updateTraits(b, -0.1, sign);
-      }
-      return;
-    }
-    let stats = S.scores[bucketFor(S.phase)],
-      A = stats[a.id],
-      B = stats[b.id];
-    if (ans === "unknown") {
-      A.unknowns += sign;
-      B.unknowns += sign;
-      return;
-    }
-    A.played += sign;
-    B.played += sign;
-    if (ans === "a") {
-      A.score += PAIRWISE_WIN_SCORE * sign;
-      A.wins += sign;
-      B.losses += sign;
-      updateTraits(a, 1, sign);
-    } else if (ans === "b") {
-      B.score += PAIRWISE_WIN_SCORE * sign;
-      B.wins += sign;
-      A.losses += sign;
-      updateTraits(b, 1, sign);
-    } else {
-      A.draws += sign;
-      B.draws += sign;
-      let weight = ans === "both" ? 0.4 : -0.1;
-      updateTraits(a, weight, sign);
-      updateTraits(b, weight, sign);
-      if (ans === "both") {
-        A.score += sign;
-        B.score += sign;
-      }
-    }
-  }
-  function reasonTagScreen(ans, a, b, kind) {
-    let chosen = ans === "a" ? a : b,
-      other = ans === "a" ? b : a;
-    progress();
-    screen(
-      `<div class="eyebrow">${activeConfig().label} · ${names[S.phase]}</div><h2>「${esc(chosen.label)}」を選んだ理由に近いのは？</h2><p class="note">「${esc(other.label)}」との比較で、いちばん近い理由を1つ選んでください。任意なのでスキップもできます。</p><div class="or reason-tags">${REASON_TAGS.map((t) => `<button data-tag="${t.id}">${esc(t.label)}</button>`).join("")}</div><button class="btn ghost" id="skipTag" style="width:100%;margin-top:14px">スキップして次へ</button><div class="navrow"><button class="link" id="tagBack">← 選び直す</button><span></span></div>`
-    );
-    root
-      .querySelectorAll("[data-tag]")
-      .forEach((t) => (t.onclick = () => answer(ans, a, b, kind, t.dataset.tag)));
-    $("#skipTag").onclick = () => answer(ans, a, b, kind, null);
-    $("#tagBack").onclick = () => pair();
-  }
-  function answer(ans, a, b, kind, reasonTag) {
-    let log = {
-      type: kind,
-      questionKey: `${S.phase}_${S.index}`,
-      phase: S.phase,
-      aId: a.id,
-      bId: b.id,
-      a: a.label,
-      b: b.label,
-      aDescription: a.description,
-      bDescription: b.description,
-      aTraits: a.trait_weights || {},
-      bTraits: b.trait_weights || {},
-      answer: ans,
-      reason_tag: reasonTag || null,
-      comparisonType: kind
-    };
-    S.logs.push(log);
-    if (S.phase === "anchor") S.anchorAnswers.push(log);
-    if (["pairwise", "closePairwise"].includes(S.phase)) S.pairwiseLogs.push(log);
-    if (S.phase === "tradeoff") S.tradeoffLogs.push(log);
-    pushTrail({ type: "pair", phase: S.phase, index: S.index, payload: log });
-    recalculateAllScores();
-    S.questionCount++;
-    S.index++;
-    S.editingAnswer = null;
-    if (S.questionCount >= activeConfig().maxAnswers) {
-      transition(
-        S.experienceMode === "standard" || S.experienceMode === "deep"
-          ? S.mode === "company"
-            ? "avoid"
-            : "risk"
-          : phases()[phases().length - 1]
-      );
-    } else if (S.index < S.queue.length) pair();
-    else finishPhase();
-  }
-  function backPair() {
-    goBack();
-  }
-  function earlyResult() {
-    S.isEarlyResult = true;
-    transition(
-      ["deep_continuation", "explore_more"].includes(S.experienceMode)
-        ? "result"
-        : S.mode === "company"
-          ? "avoid"
-          : "risk"
-    );
-  }
   function headToHead(a, b, p) {
     let wins = {};
     S.logs
@@ -4113,29 +3425,6 @@
   function topIds(p, n) {
     return (S.rankings[p] || ranking(p)).slice(0, n).map((x) => x.id);
   }
-  function finishPhase() {
-    S.rankings[bucketFor(S.phase)] = ranking(S.phase);
-    let i = phases().indexOf(S.phase);
-    if (i < phases().length - 1) transition(phases()[i + 1]);
-    else transition("result");
-  }
-  function checks(list) {
-    saveSession();
-    let restored = S.editingAnswer?.type === "avoid" ? S.editingAnswer.payload.selected : S.avoid;
-    progress();
-    let title = S.mode === "company" ? "避けたい働き方は？" : "避けたいリスクは？";
-    screen(
-      `<div class="eyebrow">${activeConfig().label} · ${S.questionCount}回答</div><h2>${title}</h2><p class="lead">該当するものを選んでください。未選択でも進めます。</p><div class="checks">${list.map((x) => `<label class="check"><input type="checkbox" value="${x.id}" ${restored.includes(x.id) ? "checked" : ""}><span><b>${x.label}</b><small>${x.description}</small></span></label>`).join("")}</div><button class="btn primary" id="done">結果を見る</button><button class="btn ghost" id="back" style="width:100%;margin-top:10px">戻る</button></div>`
-    );
-    $("#done").onclick = () => {
-      S.avoid = [...root.querySelectorAll("input:checked")].map((x) => x.value);
-      pushTrail({ type: "avoid", phase: S.phase, index: 0, payload: { selected: [...S.avoid] } });
-      S.questionCount++;
-      S.editingAnswer = null;
-      finishPhase();
-    };
-    $("#back").onclick = goBack;
-  }
   function getRank(r, p) {
     let ranks = r.rankings || {};
     if (p === "career")
@@ -4147,14 +3436,6 @@
       );
     if (p === "workStyle") return ranks.workStyles || ranks.style || ranks.soloStyles || [];
     return ranks[p] || [];
-  }
-
-  // ==== 結果の生成（インサイト集計・履歴レコード・AIプロンプト）====
-  function complete() {
-    let rec = record();
-    save(rec);
-    clearSession();
-    showResult(rec);
   }
   function branchOf(r) {
     return (
@@ -4192,23 +3473,23 @@
       unexplored = scored
         .filter((x) => !x.played)
         .sort((a, b) => b.affinity - a.affinity)
-        .slice(0, 3),
+        .slice(0, UNEXPLORED_DISPLAY_COUNT),
       topTraits = Object.entries(displayTraits)
         .sort((a, b) => b[1] - a[1])
-        .slice(0, 8)
+        .slice(0, TRAIT_RADAR_COUNT)
         .map(([id, score]) => ({ id, label: traitLabels[id], score })),
       avoidLeaning = scored
         .filter((x) => (x.worstCount || 0) > 0)
         .sort((a, b) => b.worstCount - a.worstCount || a.displayScore - b.displayScore)
-        .slice(0, 7),
+        .slice(0, AVOID_LEANING_COUNT),
       misfitEnvironments = Object.entries(displayTraits)
         .sort((a, b) => a[1] - b[1])
-        .slice(0, 4)
+        .slice(0, MISFIT_DISPLAY_COUNT)
         .map(([id, score]) => ({ id, label: traitLabels[id], score, hint: traitMisfitHints[id] })),
       logs = r.comparisonLogs || [],
       close = [];
     for (let i = 0; i < overall.length - 1; i++)
-      if (Math.abs(overall[i].displayScore - overall[i + 1].displayScore) <= 4)
+      if (Math.abs(overall[i].displayScore - overall[i + 1].displayScore) <= CLOSE_CONTEST_GAP)
         close.push(`${overall[i].label}と${overall[i + 1].label}が接戦です`);
     let both = logs.filter((x) => x.answer === "both").slice(-2),
       unknown = logs.filter((x) => x.answer === "unknown").slice(-2);
@@ -4216,7 +3497,7 @@
     unknown.forEach((x) => close.push(`${x.a}と${x.b}は、まだ判断材料が不足しています`));
     if (!close.length)
       close.push("上位候補と未探索候補を追加で比べると、判断軸がより明確になります");
-    let mapItems = [...overall, ...unexplored].slice(0, 8),
+    let mapItems = [...overall, ...unexplored].slice(0, MAP_POINT_COUNT),
       points = mapItems.map((x) => {
         let w = x.trait_weights || {},
           px = (w.autonomy || 0) - (w.team_support || 0),
@@ -4258,142 +3539,154 @@
       ]
     };
   }
-  function record() {
-    recalculateAllScores();
-    let now = new Date().toISOString(),
-      status = { id: S.status, label: label(D.status, S.status) },
-      desired = S.desiredCareerModes
-        .map((id) => DESIRED_CAREER_MODES.find((x) => x.id === id))
-        .filter(Boolean),
-      overall = ranking("career"),
-      candidateStats = {
-        career: Object.values(S.scores.career || {}).map((x) => finalizeStat({ ...x }))
-      },
-      completion =
-        S.experienceMode === "standard"
-          ? "standard_completed"
-          : S.experienceMode === "explore_more"
-            ? "explore_more_completed"
-            : "deep_completed",
-      displayTraits = normalizeTraitScores(S.userTraits, S.questionCount);
-    let base = {
-      id: String(Date.now()),
-      created_at: now,
-      updated_at: now,
-      version: "1.2.1",
-      mode: S.experienceMode,
-      status: completion,
-      source_session_id: S.sourceSessionId,
-      user_status: status,
-      desired_career_modes: desired,
-      exploration_filters: {
-        industry_ids: [...(S.explorationFilters?.industryIds || [])],
-        role_ids: [...(S.explorationFilters?.roleIds || [])],
-        strength: S.explorationFilters?.strength || "broad"
-      },
-      career_mode: null,
-      career_branch: S.mode,
-      anchorAnswers: S.anchorAnswers,
-      cardSortLogs: S.cardSortLogs,
-      maxDiffLogs: S.maxDiffLogs,
-      pairwiseLogs: S.pairwiseLogs,
-      tradeoffLogs: S.tradeoffLogs,
-      reflectionAnswers: S.reflectionAnswers,
-      avoidFactors: S.avoid.map((id) => label(S.mode === "company" ? D.avoid : D.risk, id)),
-      candidateStats,
-      userTraits: { ...S.userTraits },
-      rawTraitScores: { ...S.userTraits },
-      displayTraits,
-      rankings: { overall },
-      comparisonLogs: S.logs,
-      question_count: S.questionCount,
-      is_early_result: S.isEarlyResult
-    };
-    let insight = insightFor(base);
-    base.possibilityMap = insight.possibilityMap;
-    base.closeContests = insight.closeContests;
-    base.unexploredCandidates = insight.unexplored;
-    base.resultSummary = {
-      mode: activeConfig().label,
-      lean: insight.lean,
-      desiredCareerModes: desired.map((x) => x.label),
-      topCandidates: insight.overall.slice(0, TOP_N_DISPLAY).map((x) => x.label),
-      topTraits: insight.topTraits.slice(0, TOP_N_DISPLAY).map((x) => x.label)
-    };
-    base.insights = insight;
-    base.aiPrompt = promptFor(base);
-    return base;
+
+  // ==================================================================
+  // 4. STATE — セッション状態・保存・復元
+  // ==================================================================
+  // localStorageアクセスの一元化（容量超過やプライベートモードでの例外を握りつぶす）
+  const HISTORY_KEY = "careerPairwiseLabHistory";
+  function storageGet(key) {
+    try {
+      return localStorage.getItem(key);
+    } catch {
+      return null;
+    }
   }
-  function promptFor(r) {
-    let insight = r.insights || insightFor(r),
-      deep = r.mode !== "standard",
-      fmt = (list) =>
-        list
-          .slice(0, TOP_N_DISPLAY)
-          .map(
-            (x, i) =>
-              `${i + 1}. ${x.label}: displayScore ${x.displayScore} / 比較${x.played} / 信頼度${getConfidenceLabel(x.confidence)} / Best ${x.bestCount || 0} / Worst ${x.worstCount || 0}`
-          )
-          .join("\n"),
-      reasonTags =
-        (r.pairwiseLogs || [])
-          .filter((x) => x.reason_tag)
-          .map(
-            (x) =>
-              `- ${x.answer === "a" ? x.a : x.b}（vs ${x.answer === "a" ? x.b : x.a}）: ${REASON_TAGS.find((t) => t.id === x.reason_tag)?.label || x.reason_tag}`
-          )
-          .join("\n") || "なし",
-      reflection =
-        (r.reflectionAnswers || [])
-          .filter((x) => x.answer)
-          .map((x) => `- ${x.text}: ${x.answer}`)
-          .join("\n") || "なし",
-      tradeoffs =
-        (r.tradeoffLogs || [])
-          .map((x) => `- ${x.aDescription} / ${x.bDescription}: ${x.answer}`)
-          .join("\n") || "なし",
-      low = scoreCandidates(r)
-        .filter((x) => x.confidence < 0.4)
-        .slice(0, TOP_N_DISPLAY)
-        .map((x) => x.label)
-        .join("、");
-    return `これは${deep ? "がっつり版" : "標準版"}の探索型キャリア比較ログです。${r.mode === "deep_continuation" ? "標準版の回答を引き継いだ追加分析です。" : ""}スコアは確定値ではなく探索用の推定値です。\n\n回答数: ${r.question_count}\ntrait上位: ${insight.topTraits.map((x) => `${x.label} ${x.score}`).join("、")}\n可能性マップ: ${insight.lean}\n総合候補:\n${fmt(insight.overall)}\n会社員寄り:\n${fmt(insight.company)}\n個人活動寄り:\n${fmt(insight.individual)}\n創作・副業寄り:\n${fmt(insight.creative)}\n接戦・迷い: ${insight.closeContests.join(" / ")}\n信頼度が低い候補: ${low}\n未探索: ${insight.unexplored.map((x) => x.label).join("、")}\n今は距離を感じている候補（仮説）: ${insight.avoidLeaning.map((x) => `${x.label}(Worst${x.worstCount || 0}回)`).join("、") || "該当なし"}\nフィットしにくいかもしれない環境（仮説）: ${insight.misfitEnvironments.map((x) => `${x.hint}（関連傾向:${x.label}）`).join("、")}\n避けたい要素: ${(r.avoidFactors || []).join("、") || "未選択"}\n接戦比較で選んだ理由タグ:\n${reasonTags}\nトレードオフ回答:\n${tradeoffs}\n内省回答:\n${reflection}\n\n値を断定せず、迷いの構造と反証すべき問いを示してください。信頼度の低い候補から追加で比較すべき組み合わせ、話を聞く相手、小さく試す行動を提案してください。距離を感じている候補や環境についても、決めつけずに仮説として深掘りする問いを含めてください。`;
+  function storageSet(key, value) {
+    try {
+      localStorage.setItem(key, value);
+    } catch {}
+  }
+  function storageRemove(key) {
+    try {
+      localStorage.removeItem(key);
+    } catch {}
+  }
+  // 回答ログは全てS.logsに集約される。S.anchorAnswers/S.pairwiseLogs/S.tradeoffLogsなどの
+  // フェーズ別配列も同じログオブジェクトを保持しており、フェーズ単位でのスコア再計算に使う。
+  // 過去に存在したS.tieLogs等の廃止済み配列は参照しないこと（再導入すると初回回答時に
+  // クラッシュした実績がある）。S.cardSortLogsはv0.9.5以前に保存された履歴のスコア再計算
+  // 互換のためだけに残しており、カード仕分け画面自体は現行フローには存在しない。
+  function freshState() {
+    return {
+      view: "home",
+      status: null,
+      career: null,
+      desiredCareerModes: [],
+      scopeFilter: { industryIds: [], roleIds: [] },
+      explorationFilters: { industryIds: [], roleIds: [], strength: "broad" },
+      mode: null,
+      experienceMode: null,
+      sourceSessionId: null,
+      phase: null,
+      index: 0,
+      queue: [],
+      phaseQueues: {},
+      scores: {},
+      selected: {},
+      logs: [],
+      anchorAnswers: [],
+      cardSortLogs: [],
+      maxDiffLogs: [],
+      pairwiseLogs: [],
+      tradeoffLogs: [],
+      reflectionAnswers: [],
+      answerTrail: [],
+      navigationStack: [],
+      editingAnswer: null,
+      rankings: {},
+      avoid: [],
+      userTraits: freshTraits(),
+      questionCount: 0,
+      isEarlyResult: false
+    };
+  }
+  let S = freshState();
+  // 過去の結果レコードから、回答ログを引き継いだ追加分析用の状態を作る
+  function stateFromRecord(r, branch, desired) {
+    return {
+      status: r.user_status?.id || null,
+      career: desired[0]?.id || null,
+      desiredCareerModes: desired.map((x) => x.id),
+      explorationFilters: explorationFiltersOf(r),
+      mode: branch,
+      sourceSessionId: r.id,
+      phase: null,
+      index: 0,
+      queue: [],
+      phaseQueues: {},
+      scores: {},
+      selected: {},
+      logs: [...(r.comparisonLogs || [])],
+      anchorAnswers: [...(r.anchorAnswers || [])],
+      cardSortLogs: [...(r.cardSortLogs || [])],
+      maxDiffLogs: [...(r.maxDiffLogs || [])],
+      pairwiseLogs: [...(r.pairwiseLogs || [])],
+      tradeoffLogs: [...(r.tradeoffLogs || [])],
+      reflectionAnswers: [...(r.reflectionAnswers || [])],
+      answerTrail: [],
+      navigationStack: [],
+      editingAnswer: null,
+      rankings: {},
+      avoid: (r.avoidFactors || [])
+        .map((name) => (branch === "company" ? D.avoid : D.risk).find((x) => x.label === name)?.id)
+        .filter(Boolean),
+      userTraits: freshTraits(),
+      questionCount: 0,
+      isEarlyResult: false
+    };
+  }
+  const label = (list, id) => (list.find((x) => x.id === id) || {}).label || id;
+  function desiredModesOf(session) {
+    let value = session.desired_career_modes || (session.career_mode ? [session.career_mode] : []);
+    return value
+      .map((x) =>
+        typeof x === "string"
+          ? DESIRED_CAREER_MODES.find((m) => m.id === x) || { id: x, label: x }
+          : x
+      )
+      .filter(Boolean);
+  }
+  // 旧履歴（exploration_filtersを持たない記録）を開いた場合は広め設定として扱う。
+  function explorationFiltersOf(session) {
+    let f = (session && session.exploration_filters) || {};
+    return {
+      industryIds: f.industry_ids || [],
+      roleIds: f.role_ids || [],
+      strength: f.strength || "broad"
+    };
+  }
+  function history() {
+    try {
+      let value = JSON.parse(storageGet(HISTORY_KEY));
+      return Array.isArray(value) ? value.filter((x) => x && typeof x === "object" && x.id) : [];
+    } catch {
+      storageRemove(HISTORY_KEY);
+      return [];
+    }
+  }
+  function saveHistoryList(list) {
+    storageSet(HISTORY_KEY, JSON.stringify(list));
   }
   function save(r) {
     let h = history();
     h.unshift(r);
-    localStorage.setItem("careerPairwiseLabHistory", JSON.stringify(h.slice(0, MAX_HISTORY)));
+    saveHistoryList(h.slice(0, MAX_HISTORY));
   }
-  function history() {
-    try {
-      let value = JSON.parse(localStorage.getItem("careerPairwiseLabHistory"));
-      return Array.isArray(value) ? value.filter((x) => x && typeof x === "object" && x.id) : [];
-    } catch {
-      localStorage.removeItem("careerPairwiseLabHistory");
-      return [];
-    }
-  }
-
-  // ==== v1.1 途中セッションの自動保存・再開 ====
   const SESSION_KEY = "careerPairwiseLabSession";
   function saveSession() {
     if (!S.phase) return;
-    try {
-      localStorage.setItem(
-        SESSION_KEY,
-        JSON.stringify({ saved_at: new Date().toISOString(), state: S })
-      );
-    } catch {}
+    storageSet(SESSION_KEY, JSON.stringify({ saved_at: new Date().toISOString(), state: S }));
   }
   function clearSession() {
-    localStorage.removeItem(SESSION_KEY);
+    storageRemove(SESSION_KEY);
   }
   function loadSession() {
     try {
-      let value = JSON.parse(localStorage.getItem(SESSION_KEY));
+      let value = JSON.parse(storageGet(SESSION_KEY));
       return value && value.state && value.state.phase ? value : null;
     } catch {
-      localStorage.removeItem(SESSION_KEY);
+      storageRemove(SESSION_KEY);
       return null;
     }
   }
@@ -4411,9 +3704,532 @@
     else S.index < S.queue.length ? pair() : finishPhase();
   }
 
-  // ==== 結果画面のパネル生成（レーダーチャート・可能性マップ・各ランキング）====
+
+  // ==================================================================
+  // 5. SCREENS — 画面レンダリング（画面ごとに1関数）
+  // ==================================================================
+  function copy(t) {
+    if (navigator.clipboard && isSecureContext)
+      navigator.clipboard
+        .writeText(t)
+        .then(() => toast("コピーしました"))
+        .catch(() => fallback(t));
+    else fallback(t);
+  }
+  function fallback(t) {
+    let a = document.createElement("textarea");
+    a.value = t;
+    document.body.append(a);
+    a.select();
+    document.execCommand("copy");
+    a.remove();
+    toast("コピーしました");
+  }
+  function toast(msg) {
+    let t = $("#toast");
+    if (msg) t.textContent = msg;
+    t.classList.add("show");
+    setTimeout(() => t.classList.remove("show"), TOAST_DURATION_MS);
+  }
+  function esc(s) {
+    return String(s).replace(
+      /[&<>"']/g,
+      (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]
+    );
+  }
+
+  function screen(html) {
+    root.innerHTML = `<section class="screen">${html}</section>`;
+    scrollTo(0, 0);
+  }
+  function progress(extra) {
+    let p = extra ?? S.questionCount / TIME_BUDGET_CONFIG.maxTotalQuestions;
+    let shell = $(".progress-shell");
+    shell.hidden = !p;
+    $(".progress i").style.width = `${Math.min(1, p) * 100}%`;
+    let phaseEl = $("#progressPhase"),
+      countEl = $("#progressCount");
+    if (S.phase && names[S.phase]) {
+      phaseEl.textContent = `現在：${names[S.phase]}`;
+      let remain = Math.max(0, (activeConfig().maxAnswers || 0) - S.questionCount);
+      countEl.textContent = remain ? `あと目安${remain}問` : "";
+    } else {
+      phaseEl.textContent = "";
+      countEl.textContent = "";
+    }
+  }
+  function phaseProgressBar() {
+    let total = S.queue.length || 1,
+      current = Math.min(S.index + 1, total),
+      pct = Math.round((S.index / total) * 100);
+    return `<div class="progress-shell"><div class="progress-label"><span>現在 ${current}問目 / 全${total}問</span><span>${pct}%</span></div><div class="progress"><i style="width:${Math.min(100, pct)}%"></i></div></div>`;
+  }
+  function modeLabelOf(mode) {
+    return mode === "standard"
+      ? "標準版"
+      : mode === "deep_continuation"
+        ? "標準版 → がっつり版"
+        : mode === "explore_more"
+          ? "未探索チェック"
+          : mode === "deep"
+            ? "がっつり版"
+            : "旧版";
+  }
+  const names = {
+    anchor: "アンカー質問",
+    maxDiff: "MaxDiff",
+    additionalMaxDiff: "追加MaxDiff",
+    pairwise: "接戦ペアワイズ",
+    closePairwise: "追加接戦ペアワイズ",
+    tradeoff: "トレードオフ比較",
+    avoid: "避けたい要素",
+    risk: "個人活動リスク",
+    reflection: "内省質問"
+  };
+  const intros = {
+    anchor: [
+      "01",
+      "アンカー質問",
+      "まずは、働き方や価値観の初期傾向を見ます。",
+      "実現可能性ではなく、今どちらに惹かれるかで選んでください。"
+    ],
+    maxDiff: [
+      "02",
+      "MaxDiff",
+      "4つの中から、今いちばん気になるものと、今はいちばん違うと感じるものを選んでください。",
+      "選んだ後でも、次へ進む前なら変更できます。"
+    ],
+    additionalMaxDiff: [
+      "＋1",
+      "追加MaxDiff",
+      "接戦候補と未探索候補を4枚ずつ比べます。",
+      "標準版では見えにくかった差を探します。"
+    ],
+    pairwise: [
+      "03",
+      "接戦ペアワイズ",
+      "ここでは、4択比較で接戦だった候補を2択で確認します。",
+      "今どちらに惹かれるかで選んでください。"
+    ],
+    closePairwise: [
+      "＋2",
+      "追加接戦ペアワイズ",
+      "標準版で迷いが残った候補を追加で比較します。",
+      "同じ診断のやり直しではなく、接戦の深掘りです。"
+    ],
+    tradeoff: [
+      "04",
+      "トレードオフ比較",
+      "ここでは、働き方の価値観が分かれる組み合わせを比べます。",
+      "どちらも完璧ではない前提で、より受け入れたい方を選びます。"
+    ],
+    avoid: [
+      "05",
+      "避けたい要素",
+      "入社前に確認したい条件をチェックします。",
+      "気になるものだけ選びます。"
+    ],
+    risk: [
+      "05",
+      "避けたいリスク",
+      "個人活動前に確認したいリスクをチェックします。",
+      "気になるものだけ選びます。"
+    ],
+    reflection: [
+      "06",
+      "内省質問",
+      "比較では拾えない違和感や驚きを、自分の言葉で残します。",
+      "任意回答です。空欄でも進めます。"
+    ],
+    result: [
+      "RESULT",
+      "結果",
+      "これは回答傾向をもとにした探索用の仮説です。",
+      "追加で調べたり、人に話を聞いたりするための地図として使ってください。"
+    ]
+  };
+  function home() {
+    progress(0);
+    let sess = loadSession(),
+      resumeHtml = "";
+    if (sess) {
+      let mode = sess.state.experienceMode,
+        cfg =
+          mode === "deep_continuation"
+            ? MODE_CONFIG.deepContinuation
+            : MODE_CONFIG[mode] || MODE_CONFIG.standard;
+      resumeHtml = `<div class="panel" id="resumePanel"><h3>前回の続きがあります</h3><p class="note">${esc(cfg.label)} · ${sess.state.questionCount || 0}問回答済み · ${esc(new Date(sess.saved_at).toLocaleString("ja-JP"))} 保存</p><button class="btn primary" id="resumeBtn" style="width:100%">続きから再開する</button><button class="btn ghost" id="discardBtn" style="width:100%;margin-top:10px">破棄して最初から</button></div>`;
+    }
+    let f = S.scopeFilter || { industryIds: [], roleIds: [] },
+      box = (item, attr, list) =>
+        `<label class="check"><input type="checkbox" data-${attr}="${item.id}" ${list.includes(item.id) ? "checked" : ""}><span><b>${esc(item.label)}</b><small>${esc(item.description)}</small></span></label>`,
+      industryBoxes = INDUSTRY_FILTERS.map((x) => box(x, "scope-industry", f.industryIds)).join(""),
+      roleBoxes = ROLE_FILTERS.map((x) => box(x, "scope-role", f.roleIds)).join(""),
+      scopeHtml = `<details class="panel" id="scopeFilterPanel"><summary>探索範囲を最初から決めておく（任意）</summary><p class="note">最初から範囲をある程度決めたい人向けの設定です。選んだ業界・仕事の種類に合う候補だけを比較対象にします。未選択なら全候補が対象です。やり直したくなったら「最初から」でいつでも広げ直せます。</p><p class="note">※途中の「探索範囲を選ぶ」画面は候補を減らさずに出題の配合を調整しますが、ここでの設定は比較対象そのものを絞ります。</p><p class="note" style="margin:14px 0 6px"><b>業界・業種</b></p><div class="checks">${industryBoxes}</div><p class="note" style="margin:14px 0 6px"><b>探索したい仕事の種類</b></p><div class="checks">${roleBoxes}</div></details>`;
+    screen(
+      `<div class="hero"><div class="eyebrow">CAREER PAIRWISE LAB · v1.3.0</div><h1>自分でも気づいていない、<br>働き方の傾向を探ろう。</h1><p class="lead">4択比較や2択トレードオフに答えるだけで、<br>自分の判断軸が見えてくる探索ツールです。<br>結果は正解ではなく、次に調べる仮説として使ってください。</p>${resumeHtml}${scopeHtml}<div class="mode-grid"><div class="mode-card"><span class="time-badge">⏱ 12〜15分</span><h3>標準版</h3><p>まず傾向と可能性マップを見る</p><button class="btn primary" data-mode-start="standard">標準版で始める</button></div><div class="mode-card"><span class="time-badge">⏱ 25〜35分</span><h3>がっつり版</h3><p>迷い・接戦・価値観まで深く見る</p><button class="btn primary" data-mode-start="deep">がっつり版で始める</button></div></div><p class="note">個人情報は入力しません。回答は端末内だけに保存され、外部へ送信されません。</p></div>`
+    );
+    root.querySelectorAll("[data-mode-start]").forEach(
+      (b) =>
+        (b.onclick = () => {
+          S.experienceMode = b.dataset.modeStart;
+          select("status");
+        })
+    );
+    root.querySelectorAll("[data-scope-industry]").forEach(
+      (cb) =>
+        (cb.onchange = () => {
+          let id = cb.dataset.scopeIndustry;
+          if (cb.checked) {
+            if (!S.scopeFilter.industryIds.includes(id)) S.scopeFilter.industryIds.push(id);
+          } else S.scopeFilter.industryIds = S.scopeFilter.industryIds.filter((x) => x !== id);
+        })
+    );
+    root.querySelectorAll("[data-scope-role]").forEach(
+      (cb) =>
+        (cb.onchange = () => {
+          let id = cb.dataset.scopeRole;
+          if (cb.checked) {
+            if (!S.scopeFilter.roleIds.includes(id)) S.scopeFilter.roleIds.push(id);
+          } else S.scopeFilter.roleIds = S.scopeFilter.roleIds.filter((x) => x !== id);
+        })
+    );
+    if (sess) {
+      $("#resumeBtn").onclick = resumeSession;
+      $("#discardBtn").onclick = () => {
+        clearSession();
+        home();
+      };
+    }
+  }
+  function select(type) {
+    S.view = type;
+    let isStatus = type === "status",
+      list = D[type];
+    progress(isStatus ? 0.05 : 0.1);
+    screen(
+      `<div class="eyebrow">STEP 1 / 現在地</div><h2>今のあなたに近い状態を選んでください</h2><p class="lead">現在の状況だけを選びます。次の画面で、将来気になる方向を別に選びます。</p><div class="choice-list">${list.map((x) => `<button class="choice" data-id="${x.id}"><strong>${x.label}</strong><span>${x.description}</span></button>`).join("")}</div><div class="navrow"><button class="link" id="back">← 戻る</button><button class="link" id="reset">最初から</button></div>`
+    );
+    root.querySelectorAll(".choice").forEach(
+      (b) =>
+        (b.onclick = () => {
+          S.status = b.dataset.id;
+          selectDesiredCareerModes();
+        })
+    );
+    $("#back").onclick = home;
+    $("#reset").onclick = reset;
+  }
+  function selectDesiredCareerModes() {
+    S.view = "desiredCareerModes";
+    let chosen = new Set(S.desiredCareerModes);
+    progress(0.1);
+    screen(
+      `<div class="eyebrow">STEP 2 / 希望するキャリア形態</div><h2>今、比較してみたいキャリアの形を選んでください</h2><p class="lead">気になっている働き方・生き方を1〜3つ選んでください。<br>これは候補を絞り込むためではなく、比較候補の出し方を少し調整するために使います。</p><div class="choice-list">${DESIRED_CAREER_MODES.map((x) => `<button class="choice ${chosen.has(x.id) ? "chosen" : ""}" data-desired="${x.id}"><strong>${x.label}</strong><span>${x.description}</span></button>`).join("")}</div><p class="note" id="desiredHelp">${chosen.size}/${MAX_DESIRED_MODES} 選択中</p><button class="btn primary" id="desiredNext" ${chosen.size ? "" : "disabled"}>この方向で探索する</button><div class="navrow"><button class="link" id="back">← 現在地へ</button><button class="link" id="reset">最初から</button></div>`
+    );
+    root.querySelectorAll("[data-desired]").forEach(
+      (b) =>
+        (b.onclick = () => {
+          let id = b.dataset.desired;
+          if (chosen.has(id)) chosen.delete(id);
+          else if (chosen.size < MAX_DESIRED_MODES) chosen.add(id);
+          else {
+            $("#desiredHelp").textContent = `選べるのは最大${MAX_DESIRED_MODES}つです`;
+            return;
+          }
+          b.classList.toggle("chosen", chosen.has(id));
+          $("#desiredHelp").textContent = `${chosen.size}/${MAX_DESIRED_MODES} 選択中`;
+          $("#desiredNext").disabled = !chosen.size;
+        })
+    );
+    $("#desiredNext").onclick = () => {
+      S.desiredCareerModes = [...chosen];
+      S.career = S.desiredCareerModes[0] || null;
+      let company = S.desiredCareerModes.some((x) =>
+          ["company_employee", "public_org", "hybrid"].includes(x)
+        ),
+        solo = S.desiredCareerModes.some((x) =>
+          ["freelance", "small_business", "creator", "startup_founder"].includes(x)
+        );
+      S.mode = company && !solo ? "company" : "solo";
+      selectExplorationFilters();
+    };
+    $("#back").onclick = () => select("status");
+    $("#reset").onclick = reset;
+  }
+  function selectExplorationFilters() {
+    S.view = "explorationFilters";
+    let f = S.explorationFilters || { industryIds: [], roleIds: [], strength: "broad" },
+      industryChosen = new Set(f.industryIds),
+      roleChosen = new Set(f.roleIds),
+      strength = f.strength || "balanced";
+    let renderCheck = (item, chosenSet, attr) =>
+      `<label class="check"><input type="checkbox" data-${attr}="${item.id}" ${chosenSet.has(item.id) ? "checked" : ""}><span><b>${esc(item.label)}</b><small>${esc(item.description)}</small></span></label>`;
+    function summaryHtml() {
+      let industryLabels = INDUSTRY_FILTERS.filter((x) => industryChosen.has(x.id)).map((x) => x.label),
+        roleLabels = ROLE_FILTERS.filter((x) => roleChosen.has(x.id)).map((x) => x.label),
+        strengthLabel = FILTER_STRENGTH_OPTIONS.find((x) => x.id === strength)?.label || "";
+      return `<div class="panel" id="explorationSummary"><h3>今回の探索設定</h3><p class="note"><b>業界・業種：</b><br>${industryLabels.length ? industryLabels.map(esc).join(" / ") : "指定なし"}</p><p class="note"><b>職種：</b><br>${roleLabels.length ? roleLabels.map(esc).join(" / ") : "指定なし"}</p><p class="note"><b>探索の広さ：</b><br>${esc(strengthLabel)}</p><p class="note">この設定をもとに、4択比較に出す候補の配合を調整します。候補を完全に消すものではありません。</p></div>`;
+    }
+    function updateSummary() {
+      let el = $("#explorationSummary");
+      if (el) el.outerHTML = summaryHtml();
+    }
+    function bindEvents() {
+      root.querySelectorAll("[data-industry]").forEach(
+        (cb) =>
+          (cb.onchange = () => {
+            let id = cb.dataset.industry;
+            if (cb.checked) {
+              if (industryChosen.size >= MAX_FILTER_SELECT) {
+                cb.checked = false;
+                toast("業界・業種は最大5つまでです");
+                return;
+              }
+              industryChosen.add(id);
+            } else industryChosen.delete(id);
+            updateSummary();
+          })
+      );
+      root.querySelectorAll("[data-role]").forEach(
+        (cb) =>
+          (cb.onchange = () => {
+            let id = cb.dataset.role;
+            if (cb.checked) {
+              if (roleChosen.size >= MAX_FILTER_SELECT) {
+                cb.checked = false;
+                toast("職種は最大5つまでです");
+                return;
+              }
+              roleChosen.add(id);
+            } else roleChosen.delete(id);
+            updateSummary();
+          })
+      );
+      root.querySelectorAll("[data-strength]").forEach(
+        (b) =>
+          (b.onclick = () => {
+            strength = b.dataset.strength;
+            root
+              .querySelectorAll("[data-strength]")
+              .forEach((x) => x.classList.toggle("chosen", x.dataset.strength === strength));
+            $("#strengthDesc").textContent =
+              FILTER_STRENGTH_OPTIONS.find((x) => x.id === strength)?.description || "";
+            updateSummary();
+          })
+      );
+      $("#openWide").onclick = () => {
+        S.explorationFilters = { industryIds: [], roleIds: [], strength: "broad" };
+        S.navigationStack.push({ screen: "explorationFilters" });
+        transition(phases()[0]);
+      };
+      $("#explorationNext").onclick = () => {
+        S.explorationFilters = {
+          industryIds: [...industryChosen],
+          roleIds: [...roleChosen],
+          strength: industryChosen.size || roleChosen.size ? strength : "broad"
+        };
+        S.navigationStack.push({ screen: "explorationFilters" });
+        transition(phases()[0]);
+      };
+      $("#back").onclick = () => selectDesiredCareerModes();
+      $("#reset").onclick = reset;
+    }
+    function render() {
+      progress(0.12);
+      screen(
+        `<div class="eyebrow">STEP 3 / 探索範囲を選ぶ</div><h2>探索範囲を選ぶ</h2><p class="lead">気になる業界・業種や職種があれば、ここで指定できます。<br>選んだ領域を少し多めに出しつつ、他の可能性も混ぜて比較します。<br>まだ決まっていない場合は「広く見たい」を選んでください。</p><button class="btn ghost" id="openWide" style="width:100%;margin-bottom:18px">まだ広く見たい（絞らずにこのまま始める）</button><details class="panel" id="industryPanel"><summary>業界・業種を選ぶ（最大5つ）</summary><p class="note">気になる業界があれば最大5つまで選べます。</p><div class="checks">${INDUSTRY_FILTERS.map((x) => renderCheck(x, industryChosen, "industry")).join("")}</div></details><details class="panel" id="rolePanel"><summary>探索したい仕事の種類（最大5つ）</summary><p class="note">気になる仕事の種類があれば最大5つまで選べます。</p><div class="checks">${ROLE_FILTERS.map((x) => renderCheck(x, roleChosen, "role")).join("")}</div></details><div class="panel"><h3>探索の広さ</h3><p class="note">広め / バランス / 強め から選べます。</p><div class="or" id="strengthPicker">${FILTER_STRENGTH_OPTIONS.map((x) => `<button data-strength="${x.id}" class="${strength === x.id ? "chosen" : ""}">${esc(x.label)}</button>`).join("")}</div><p class="note" id="strengthDesc">${esc(FILTER_STRENGTH_OPTIONS.find((x) => x.id === strength)?.description || "")}</p></div>${summaryHtml()}<button class="btn primary" id="explorationNext">この設定で進む</button><div class="navrow"><button class="link" id="back">← 希望キャリア形態へ</button><button class="link" id="reset">最初から</button></div>`
+      );
+      bindEvents();
+    }
+    render();
+  }
+  function pair() {
+    saveSession();
+    let [a, b, kind] = S.queue[S.index],
+      cfg = activeConfig(),
+      continuation = S.experienceMode === "deep_continuation";
+    progress();
+    let intent =
+        {
+          anchor: "まずは、働き方や価値観の初期傾向を見ます。",
+          pairwise: "4択比較で接戦だった候補を2択で確認します。",
+          tradeoff: "働き方の価値観が分かれる組み合わせを比べます。"
+        }[kind] || "これまでの回答傾向を深掘りします。",
+      prefix = continuation ? "がっつり版：追加分析" : cfg.label,
+      progressBarHtml = ["pairwise", "closePairwise"].includes(S.phase) ? phaseProgressBar() : "";
+    screen(
+      `<div class="eyebrow">${prefix}<br>${continuation ? "追加回答" : "回答"} ${S.questionCount + 1} / 約${cfg.maxAnswers}<br>現在：${names[S.phase]}</div>${progressBarHtml}<h2>${kind === "tradeoff" ? "より受け入れたい働き方は？" : "今、より惹かれるのは？"}</h2><p class="note">${intent}</p><div class="pair"><button class="pair-card trade-card" data-answer="a"><b>${a.label}</b><span>${a.description}</span></button><button class="pair-card trade-card" data-answer="b"><b>${b.label}</b><span>${b.description}</span></button></div><div class="or"><button data-answer="both">どちらもあり</button><button data-answer="neither">どちらも微妙</button><button data-answer="unknown">わからない</button></div><button class="btn ghost" id="early" style="width:100%;margin-top:12px">途中結果を見る</button><div class="navrow"><button class="link" id="back">← 戻る</button><button class="link" id="reset">最初から</button></div>`
+    );
+    root.querySelectorAll("[data-answer]").forEach(
+      (x) =>
+        (x.onclick = () => {
+          let ans = x.dataset.answer;
+          if (["pairwise", "closePairwise"].includes(S.phase) && ["a", "b"].includes(ans))
+            reasonTagScreen(ans, a, b, kind);
+          else answer(ans, a, b, kind);
+        })
+    );
+    $("#early").onclick = earlyResult;
+    $("#back").onclick = goBack;
+    $("#reset").onclick = reset;
+    let edit = S.editingAnswer?.type === "pair" ? S.editingAnswer.payload : null;
+    if (edit) {
+      let chosen = root.querySelector(`[data-answer="${edit.answer}"]`);
+      if (chosen) chosen.classList.add("chosen");
+    }
+  }
+  function reasonTagScreen(ans, a, b, kind) {
+    let chosen = ans === "a" ? a : b,
+      other = ans === "a" ? b : a;
+    progress();
+    screen(
+      `<div class="eyebrow">${activeConfig().label} · ${names[S.phase]}</div><h2>「${esc(chosen.label)}」を選んだ理由に近いのは？</h2><p class="note">「${esc(other.label)}」との比較で、いちばん近い理由を1つ選んでください。任意なのでスキップもできます。</p><div class="or reason-tags">${REASON_TAGS.map((t) => `<button data-tag="${t.id}">${esc(t.label)}</button>`).join("")}</div><button class="btn ghost" id="skipTag" style="width:100%;margin-top:14px">スキップして次へ</button><div class="navrow"><button class="link" id="tagBack">← 選び直す</button><span></span></div>`
+    );
+    root
+      .querySelectorAll("[data-tag]")
+      .forEach((t) => (t.onclick = () => answer(ans, a, b, kind, t.dataset.tag)));
+    $("#skipTag").onclick = () => answer(ans, a, b, kind, null);
+    $("#tagBack").onclick = () => pair();
+  }
+  function maxDiffScreen() {
+    saveSession();
+    let set = S.queue[S.index],
+      edit = S.editingAnswer?.type === "maxDiff" ? S.editingAnswer.payload : null,
+      best = edit?.best_id || null,
+      worst = edit?.worst_id || null;
+    function missingText() {
+      return !best && !worst
+        ? "「一番気になる」と「一番違う」をそれぞれ1つ選んでください。"
+        : !best
+          ? "「一番気になる」も選ぶと次へ進めます。"
+          : !worst
+            ? "「一番違う」も選ぶと次へ進めます。"
+            : "";
+    }
+    function update() {
+      let bestLabel = best ? set.find((x) => x.id === best)?.label : null,
+        worstLabel = worst ? set.find((x) => x.id === worst)?.label : null,
+        statusEls = root.querySelectorAll(".md-status-item");
+      statusEls[0].classList.toggle("set", !!best);
+      statusEls[0].textContent = `★ 選択中：${bestLabel || "未選択"}`;
+      statusEls[1].classList.toggle("set", !!worst);
+      statusEls[1].textContent = `✕ 選択中：${worstLabel || "未選択"}`;
+      root.querySelectorAll(".maxdiff-item").forEach((item) => {
+        let id = item.dataset.id;
+        item.classList.toggle("best", id === best);
+        item.classList.toggle("worst", id === worst);
+        item.querySelector(".md-btn.best").classList.toggle("active", id === best);
+        item.querySelector(".md-btn.worst").classList.toggle("active", id === worst);
+      });
+      let warn = root.querySelector(".md-warning"),
+        missing = missingText();
+      warn.hidden = !missing;
+      warn.textContent = missing;
+      $("#mdDone").disabled = !(best && worst);
+    }
+    function render() {
+      progress();
+      screen(
+        `<div class="eyebrow">${activeConfig().label} · ${names[S.phase]} ${S.index + 1} / ${S.queue.length}</div>${phaseProgressBar()}<h2>4つの中から選んでください</h2><p class="lead">4つの中から、今いちばん気になるものと、今はいちばん違うと感じるものを選んでください。<br>選んだ後でも、次へ進む前なら変更できます。</p><div class="md-status"><span class="md-status-item"></span><span class="md-status-item"></span></div><div class="maxdiff-grid">${set.map((x) => `<div class="maxdiff-item" data-id="${x.id}"><b>${x.label}</b><span class="candidate-desc">${x.desc || x.description}</span><div class="md-actions"><button class="md-btn best" data-role="best" data-id="${x.id}">一番気になる ★</button><button class="md-btn worst" data-role="worst" data-id="${x.id}">今は違う ✕</button></div></div>`).join("")}</div><p class="note md-warning"></p><div class="md-sticky"><button class="btn primary" id="mdDone">次へ</button><div class="navrow"><button class="link" id="back">← 戻る</button><button class="link" id="mdEarly">途中結果を見る</button></div></div>`
+      );
+      root.querySelectorAll("[data-role]").forEach(
+        (b) =>
+          (b.onclick = () => {
+            let id = b.dataset.id,
+              role = b.dataset.role;
+            if (role === "best") {
+              if (best === id) best = null;
+              else {
+                best = id;
+                if (worst === id) worst = null;
+              }
+            } else {
+              if (worst === id) worst = null;
+              else {
+                worst = id;
+                if (best === id) best = null;
+              }
+            }
+            update();
+          })
+      );
+      $("#mdDone").onclick = () => {
+        let a = set.find((x) => x.id === best),
+          b = set.find((x) => x.id === worst),
+          neutral = set.filter((x) => x.id !== best && x.id !== worst),
+          edges = [
+            ...neutral.map((x) => ({ winner: best, loser: x.id, weight: 1 })),
+            { winner: best, loser: worst, weight: 1 },
+            ...neutral.map((x) => ({ winner: x.id, loser: worst, weight: 0.7 }))
+          ],
+          log = {
+            type: "maxdiff",
+            phase: S.phase,
+            question_id: `${S.phase}_${S.index}`,
+            option_ids: set.map((x) => x.id),
+            best_id: best,
+            best: a.label,
+            worst_id: worst,
+            worst: b.label,
+            neutral_ids: neutral.map((x) => x.id),
+            generated_pairwise_edges: edges,
+            candidates: set.map((x) => x.label)
+          };
+        S.maxDiffLogs.push(log);
+        pushTrail({ type: "maxDiff", phase: S.phase, index: S.index, payload: log });
+        recalculateAllScores();
+        S.questionCount++;
+        S.index++;
+        S.editingAnswer = null;
+        saveSession();
+        if (S.index < S.queue.length) maxDiffScreen();
+        else finishPhase();
+      };
+      $("#back").onclick = goBack;
+      $("#mdEarly").onclick = earlyResult;
+      update();
+    }
+    render();
+  }
+  function checks(list) {
+    saveSession();
+    let restored = S.editingAnswer?.type === "avoid" ? S.editingAnswer.payload.selected : S.avoid;
+    progress();
+    let title = S.mode === "company" ? "避けたい働き方は？" : "避けたいリスクは？";
+    screen(
+      `<div class="eyebrow">${activeConfig().label} · ${S.questionCount}回答</div><h2>${title}</h2><p class="lead">該当するものを選んでください。未選択でも進めます。</p><div class="checks">${list.map((x) => `<label class="check"><input type="checkbox" value="${x.id}" ${restored.includes(x.id) ? "checked" : ""}><span><b>${x.label}</b><small>${x.description}</small></span></label>`).join("")}</div><button class="btn primary" id="done">結果を見る</button><button class="btn ghost" id="back" style="width:100%;margin-top:10px">戻る</button></div>`
+    );
+    $("#done").onclick = () => {
+      S.avoid = [...root.querySelectorAll("input:checked")].map((x) => x.value);
+      pushTrail({ type: "avoid", phase: S.phase, index: 0, payload: { selected: [...S.avoid] } });
+      S.questionCount++;
+      S.editingAnswer = null;
+      finishPhase();
+    };
+    $("#back").onclick = goBack;
+  }
+  function reflectionScreen() {
+    let q = REFLECTION_QUESTIONS[S.index],
+      edit = S.editingAnswer?.type === "reflection" ? S.editingAnswer.payload : null;
+    progress();
+    screen(
+      `<div class="eyebrow">${activeConfig().label} · 内省 ${S.index + 1} / ${REFLECTION_QUESTIONS.length}</div><h2>${q.text}</h2><p class="note">任意回答です。個人情報は入力しないでください。</p><textarea class="reflection" id="reflectionText" maxlength="${REFLECTION_MAX_LENGTH}" placeholder="一言でも、空欄でも構いません">${esc(edit?.answer || "")}</textarea><button class="btn primary" id="reflectionNext">${S.index === REFLECTION_QUESTIONS.length - 1 ? "結果へ" : "次へ"}</button><button class="btn ghost" id="back" style="width:100%;margin-top:10px">戻る</button>`
+    );
+    $("#reflectionNext").onclick = () => {
+      let log = { id: q.id, text: q.text, answer: $("#reflectionText").value.trim() };
+      S.reflectionAnswers.push(log);
+      pushTrail({ type: "reflection", phase: S.phase, index: S.index, payload: log });
+      S.questionCount++;
+      S.index++;
+      S.editingAnswer = null;
+      if (S.index < REFLECTION_QUESTIONS.length) reflectionScreen();
+      else finishPhase();
+    };
+    $("#back").onclick = goBack;
+  }
   function renderRadarChart(traits) {
-    let items = [...traits].slice(0, 8),
+    let items = [...traits].slice(0, TRAIT_RADAR_COUNT),
       cx = 160,
       cy = 155,
       r = 105,
@@ -4463,9 +4279,6 @@
         .join("") || '<p class="note">回答数が少ないため候補は未確定です。</p>'
     }</div>`;
   }
-  function renderResultHead(r, insight, early) {
-    return `<div class="result-head"><div class="eyebrow">CAREER EXPLORATORY MAP · v1.2.1</div><h2>これは回答傾向をもとにした探索用の仮説です。</h2><p>${early ? "今回は途中までの回答をもとにした仮説です。最後まで比較すると、傾向や接戦ポイントがより安定します。" : `${r.question_count || 0}問の回答から傾向を整理しました。追加で調べたり、人に話を聞いたりするための地図として使ってください。`}</p></div>`;
-  }
   function renderTraitRadarPanel(insight) {
     return `<details class="panel"><summary>traitレーダーを見る</summary><p class="note">この図は16の傾向スコアのうち上位8つを相対表示しています。能力の高さではありません。</p>${renderRadarChart(insight.topTraits)}</details>`;
   }
@@ -4497,511 +4310,6 @@
   function renderPromptPanel(prompt) {
     return `<details class="panel"><summary>AIに深掘りしてもらう</summary><p class="note">任意のAIサービスへ貼り付けて使えます。外部送信はしません。</p><div class="prompt">${esc(prompt)}</div><button class="btn secondary" id="copy">プロンプトをコピー</button></details>`;
   }
-  function showResult(r) {
-    progress(1);
-    let insight = r.insights || insightFor(r),
-      avoid = r.avoidFactors || r.avoid_factors || [],
-      prompt = r.aiPrompt || r.ai_prompt || "",
-      early = r.is_early_result;
-    screen(
-      renderResultHead(r, insight, early) +
-        bars("関心が寄っている可能性", insight.overall, "positive") +
-        renderAvoidLeaningPanel(insight) +
-        bars("会社員寄り候補", insight.company) +
-        bars("個人活動寄り候補", insight.individual) +
-        bars("創作・副業候補", insight.creative) +
-        renderCloseContestsPanel(insight) +
-        renderUnexploredPanel(insight) +
-        renderMisfitPanel(insight) +
-        renderAvoidFactorsPanel(avoid) +
-        renderNextActionsPanel(insight) +
-        renderTraitRadarPanel(insight) +
-        renderPossibilityMapPanel(insight) +
-        renderPromptPanel(prompt) +
-        `<div class="panel"><div class="saved">この結果は端末内の履歴に保存されました</div></div><div class="actions"><button class="btn ghost" id="reset">もう一度やる</button><button class="btn primary" id="hist">履歴を見る</button></div>`
-    );
-    $("#copy").onclick = () => copy(prompt);
-    $("#reset").onclick = reset;
-    $("#hist").onclick = showHistory;
-    let exploreBtn = $("#exploreMore");
-    if (exploreBtn) exploreBtn.onclick = () => startUnexploredRound(r);
-  }
-
-  // ==== 履歴画面・リセット・引き継ぎ分析（がっつり版への継続）====
-  function showHistory() {
-    progress(0);
-    document
-      .querySelectorAll(".tab")
-      .forEach((x) => x.classList.toggle("active", x.dataset.tab === "history"));
-    let h = history();
-    screen(
-      `<div class="eyebrow">LOCAL HISTORY</div><h2>過去の比較結果</h2><p class="lead">この端末内に最大30件保存されます。</p>${
-        h.length
-          ? `<div class="history">${h
-              .map((x) => {
-                let desired =
-                  desiredModesOf(x)
-                    .map((y) => esc(y.label))
-                    .join("、") || "探索方向未設定";
-                return `<button class="history-item" data-id="${esc(x.id)}"><time>${esc(new Date(x.created_at).toLocaleString("ja-JP"))}</time><h3>${desired} · ${esc(x.user_status?.label || "不明")}</h3><span class="note">${esc(x.version || "旧版")} · ${esc(x.question_count || "—")}問 · ${getRank(
-                  x,
-                  "career"
-                )
-                  .slice(0, 3)
-                  .map((y) => esc(y.label))
-                  .join("、")}</span></button>`;
-              })
-              .join("")}</div>`
-          : `<div class="empty">まだ結果がありません。</div>`
-      }`
-    );
-    root
-      .querySelectorAll("[data-id]")
-      .forEach((b) => (b.onclick = () => showResult(h.find((x) => x.id === b.dataset.id))));
-  }
-  function reset() {
-    if (S.view !== "home" && !confirm("入力中の内容を消して最初からやり直しますか？")) return;
-    clearSession();
-    S = {
-      view: "home",
-      status: null,
-      career: null,
-      desiredCareerModes: [],
-      scopeFilter: { industryIds: [], roleIds: [] },
-      explorationFilters: { industryIds: [], roleIds: [], strength: "broad" },
-      mode: null,
-      experienceMode: null,
-      sourceSessionId: null,
-      phase: null,
-      index: 0,
-      queue: [],
-      phaseQueues: {},
-      scores: {},
-      selected: {},
-      logs: [],
-      anchorAnswers: [],
-      cardSortLogs: [],
-      maxDiffLogs: [],
-      pairwiseLogs: [],
-      tradeoffLogs: [],
-      reflectionAnswers: [],
-      answerTrail: [],
-      navigationStack: [],
-      editingAnswer: null,
-      rankings: {},
-      avoid: [],
-      userTraits: freshTraits(),
-      questionCount: 0,
-      isEarlyResult: false
-    };
-    document
-      .querySelectorAll(".tab")
-      .forEach((x) => x.classList.toggle("active", x.dataset.tab === "app"));
-    home();
-  }
-  function continuationIntro(source) {
-    screen(
-      `<div class="section-intro"><div class="section-no">＋</div><div class="eyebrow">標準版 → がっつり版</div><h2>ここから、標準版の結果をもとに深掘りします。</h2><p class="lead">次は、すでに見えている傾向をさらに確かめるために、接戦だった候補、迷いが出た候補、まだ十分に比べていない候補を追加で比較します。</p><div class="tip">同じ診断をやり直すのではなく、ここまでの回答を引き継いだ追加分析です。</div><button class="btn primary" id="continueDeep">がっつり分析を始める</button></div>`
-    );
-    $("#continueDeep").onclick = () => transition(phases()[0]);
-  }
-  function startContinuation(r) {
-    let branch = r.career_branch || branchOf(r),
-      desired = desiredModesOf(r);
-    S = {
-      ...S,
-      view: "continuation",
-      status: r.user_status.id,
-      career: desired[0]?.id || null,
-      desiredCareerModes: desired.map((x) => x.id),
-      explorationFilters: explorationFiltersOf(r),
-      mode: branch,
-      experienceMode: "deep_continuation",
-      sourceSessionId: r.id,
-      phase: null,
-      index: 0,
-      queue: [],
-      phaseQueues: {},
-      scores: {},
-      selected: {},
-      logs: [...(r.comparisonLogs || [])],
-      anchorAnswers: [...(r.anchorAnswers || [])],
-      cardSortLogs: [...(r.cardSortLogs || [])],
-      maxDiffLogs: [...(r.maxDiffLogs || [])],
-      pairwiseLogs: [...(r.pairwiseLogs || [])],
-      tradeoffLogs: [...(r.tradeoffLogs || [])],
-      reflectionAnswers: [...(r.reflectionAnswers || [])],
-      answerTrail: [],
-      navigationStack: [],
-      editingAnswer: null,
-      rankings: {},
-      avoid: (r.avoidFactors || [])
-        .map((name) => (branch === "company" ? D.avoid : D.risk).find((x) => x.label === name)?.id)
-        .filter(Boolean),
-      userTraits: freshTraits(),
-      questionCount: 0,
-      isEarlyResult: false
-    };
-    recalculateAllScores();
-    continuationIntro(r);
-  }
-  function modeLabelOf(mode) {
-    return mode === "standard"
-      ? "標準版"
-      : mode === "deep_continuation"
-        ? "標準版 → がっつり版"
-        : mode === "explore_more"
-          ? "未探索チェック"
-          : mode === "deep"
-            ? "がっつり版"
-            : "旧版";
-  }
-  // 結果画面から未探索候補だけを4択で追加比較する小ループ（v1.1）
-  function startUnexploredRound(r) {
-    let branch = r.career_branch || branchOf(r),
-      desired = desiredModesOf(r);
-    S = {
-      ...S,
-      view: "exploreMore",
-      status: r.user_status?.id || null,
-      career: desired[0]?.id || null,
-      desiredCareerModes: desired.map((x) => x.id),
-      explorationFilters: explorationFiltersOf(r),
-      mode: branch,
-      experienceMode: "explore_more",
-      sourceSessionId: r.id,
-      phase: null,
-      index: 0,
-      queue: [],
-      phaseQueues: {},
-      scores: {},
-      selected: {},
-      logs: [...(r.comparisonLogs || [])],
-      anchorAnswers: [...(r.anchorAnswers || [])],
-      cardSortLogs: [...(r.cardSortLogs || [])],
-      maxDiffLogs: [...(r.maxDiffLogs || [])],
-      pairwiseLogs: [...(r.pairwiseLogs || [])],
-      tradeoffLogs: [...(r.tradeoffLogs || [])],
-      reflectionAnswers: [...(r.reflectionAnswers || [])],
-      answerTrail: [],
-      navigationStack: [],
-      editingAnswer: null,
-      rankings: {},
-      avoid: (r.avoidFactors || [])
-        .map((name) => (branch === "company" ? D.avoid : D.risk).find((x) => x.label === name)?.id)
-        .filter(Boolean),
-      userTraits: freshTraits(),
-      questionCount: 0,
-      isEarlyResult: false
-    };
-    recalculateAllScores();
-    transition("additionalMaxDiff");
-  }
-
-  // ==== 汎用ユーティリティ（クリップボードコピー・トースト通知・HTMLエスケープ）====
-  function copy(t) {
-    if (navigator.clipboard && isSecureContext)
-      navigator.clipboard
-        .writeText(t)
-        .then(() => toast("コピーしました"))
-        .catch(() => fallback(t));
-    else fallback(t);
-  }
-  function fallback(t) {
-    let a = document.createElement("textarea");
-    a.value = t;
-    document.body.append(a);
-    a.select();
-    document.execCommand("copy");
-    a.remove();
-    toast("コピーしました");
-  }
-  function toast(msg) {
-    let t = $("#toast");
-    if (msg) t.textContent = msg;
-    t.classList.add("show");
-    setTimeout(() => t.classList.remove("show"), TOAST_DURATION_MS);
-  }
-  function esc(s) {
-    return String(s).replace(
-      /[&<>"']/g,
-      (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]
-    );
-  }
-
-  // ==== 機能追加のデコレーターチェーン ====
-  // showResult/showHistory/pair/promptForを段階的に上書きし、既存の描画結果に
-  // 追加パネルやイベントを継ぎ足していく。各行は「元の関数を呼び出した後に何を足すか」
-  // という積み増し単位になっており、開発時期ごとの機能追加をこの順で重ねてきた構成。
-  const showResultCurrent = showResult;
-  showResult = (r) => {
-    let current = r.version === "0.9" ? r : { ...r, insights: null };
-    showResultCurrent(current);
-    let tag = document.querySelector(".result-head .eyebrow"),
-      note = document.querySelector(".result-head p"),
-      standard = current.mode === "standard";
-    if (tag)
-      tag.textContent = `CAREER EXPLORATORY MAP · v1.2.1 · ${modeLabelOf(current.mode)}`;
-    if (note)
-      note.textContent = standard
-        ? "これは標準版の探索結果です。現時点の回答から傾向・候補群・未探索の可能性を整理しています。さらに詳しく見たい場合は、がっつり版で接戦やトレードオフを深掘りできます。"
-        : current.mode === "explore_more"
-          ? "これは未探索候補の追加比較を反映した結果です。まだ比較が浅かった候補の位置づけを確かめるための探索です。"
-          : "これはがっつり版の探索結果です。より多くの比較とトレードオフをもとに、迷いの構造と次の検証行動を整理しています。";
-    if (current.is_early_result && note)
-      note.textContent =
-        "今回は途中までの回答をもとにした仮説です。最後まで進めると、傾向や接戦ポイントがより安定します。";
-    let promptPanel = document.querySelector(".prompt")?.closest(".panel");
-    if (!standard && promptPanel) {
-      let trade =
-        (current.tradeoffLogs || [])
-          .map(
-            (x) =>
-              `<div class="contest">${esc(x.aDescription || x.a)} ↔ ${esc(x.bDescription || x.b)}：${esc(x.answer)}</div>`
-          )
-          .join("") || '<p class="note">回答なし</p>';
-      promptPanel.insertAdjacentHTML(
-        "beforebegin",
-        `<div class="panel"><h3>トレードオフ傾向</h3>${trade}</div>`
-      );
-    }
-    if (standard) {
-      let actions = document.querySelector(".actions");
-      if (actions) {
-        actions.insertAdjacentHTML(
-          "beforebegin",
-          '<button class="btn primary" id="deepContinue" style="margin-top:16px">この結果を引き継いでがっつり分析する</button>'
-        );
-        $("#deepContinue").onclick = () => startContinuation(current);
-      }
-    }
-  };
-  const showHistoryCurrent = showHistory;
-  showHistory = () => {
-    showHistoryCurrent();
-    let records = history();
-    root.querySelectorAll(".history-item").forEach((item) => {
-      let r = records.find((x) => x.id === item.dataset.id),
-        title = item.querySelector("h3");
-      if (r && title) {
-        title.textContent = `${modeLabelOf(r.mode)} · ${title.textContent}`;
-      }
-    });
-  };
-  const showResultScored = showResult;
-  showResult = (r) => {
-    showResultScored(r);
-    let tag = document.querySelector(".result-head .eyebrow"),
-      head = document.querySelector(".result-head"),
-      actions = document.querySelector(".actions"),
-      desired = desiredModesOf(r),
-      filters = explorationFiltersOf(r),
-      industryLabels = filters.industryIds
-        .map((id) => INDUSTRY_FILTERS.find((x) => x.id === id)?.label)
-        .filter(Boolean),
-      roleLabels = filters.roleIds
-        .map((id) => ROLE_FILTERS.find((x) => x.id === id)?.label)
-        .filter(Boolean),
-      strengthLabel = FILTER_STRENGTH_OPTIONS.find((x) => x.id === filters.strength)?.label || "広めに見る";
-    if (tag)
-      tag.textContent = `CAREER EXPLORATORY MAP · v1.2.1 · ${modeLabelOf(r.mode)}`;
-    if (head)
-      head.insertAdjacentHTML(
-        "afterend",
-        `<div class="panel"><p class="note">スコアは回答傾向をもとにした探索用の推定値です。比較回数が少ない候補は中央寄りに補正しており、追加比較によって順位が変わる可能性があります。</p></div>`
-      );
-    let promptDetails = document.querySelector(".prompt")?.closest("details");
-    if (promptDetails)
-      promptDetails.insertAdjacentHTML(
-        "beforebegin",
-        `<details class="panel"><summary>今回の探索設定を見る</summary><p class="note"><b>希望する・気になるキャリア形態：</b></p><div class="chips">${desired.map((x) => `<span class="chip">${esc(x.label)}</span>`).join("") || '<span class="note">未設定</span>'}</div><p class="note" style="margin-top:12px"><b>業界・業種フィルター：</b></p><div class="chips">${industryLabels.length ? industryLabels.map((l) => `<span class="chip">${esc(l)}</span>`).join("") : '<span class="note">指定なし</span>'}</div><p class="note" style="margin-top:12px"><b>職種フィルター：</b></p><div class="chips">${roleLabels.length ? roleLabels.map((l) => `<span class="chip">${esc(l)}</span>`).join("") : '<span class="note">指定なし</span>'}</div><p class="note" style="margin-top:12px"><b>探索の広さ：</b> ${esc(strengthLabel)}</p><p class="note" style="margin-top:12px">この設定は、4択比較に出す候補の配合を調整するために使っています。結果は候補を絞り切ったものではなく、探索用の仮説です。</p></details>`
-      );
-    if (actions && S.answerTrail.length) {
-      actions.insertAdjacentHTML(
-        "beforebegin",
-        '<button class="btn ghost" id="resultBack" style="width:100%;margin-top:10px">直前の回答に戻る</button>'
-      );
-      $("#resultBack").onclick = () => {
-        let h = history().filter((x) => x.id !== r.id);
-        localStorage.setItem("careerPairwiseLabHistory", JSON.stringify(h));
-        goBack();
-      };
-    }
-  };
-  const pairCurrent = pair;
-  pair = () => {
-    pairCurrent();
-    let edit = S.editingAnswer?.type === "pair" ? S.editingAnswer.payload : null;
-    if (edit) {
-      let chosen = root.querySelector(`[data-answer="${edit.answer}"]`);
-      if (chosen) chosen.classList.add("chosen");
-    }
-  };
-  const promptForBase = promptFor;
-  promptFor = (r) => {
-    let desired =
-        desiredModesOf(r)
-          .map((x) => x.label)
-          .join("、") || "未設定",
-      filters = explorationFiltersOf(r),
-      industryLabels =
-        filters.industryIds
-          .map((id) => INDUSTRY_FILTERS.find((x) => x.id === id)?.label)
-          .filter(Boolean)
-          .join("、") || "指定なし",
-      roleLabels =
-        filters.roleIds
-          .map((id) => ROLE_FILTERS.find((x) => x.id === id)?.label)
-          .filter(Boolean)
-          .join("、") || "指定なし",
-      strengthLabel = FILTER_STRENGTH_OPTIONS.find((x) => x.id === filters.strength)?.label || "広めに見る",
-      maxdiff =
-        (r.maxDiffLogs || [])
-          .slice(-8)
-          .map((x) => `${x.best} > ${x.neutral_ids?.length || 0}候補 > ${x.worst}`)
-          .join(" / ") || "なし",
-      pairs =
-        (r.pairwiseLogs || [])
-          .slice(-8)
-          .map((x) => `${x.a} vs ${x.b}: ${x.answer}`)
-          .join(" / ") || "なし";
-    return `現在地: ${r.user_status?.label || "不明"}\n希望する・気になるキャリア形態: ${desired}\n業界・業種フィルター: ${industryLabels}\n職種フィルター: ${roleLabels}\n探索の広さ: ${strengthLabel}\nこれらは候補除外ではなく、MaxDiff候補セットの配合を調整する探索設定として使用しています。\nMaxDiff結果: ${maxdiff}\n接戦ペアワイズ結果: ${pairs}\n\n${promptForBase(r)}`;
-  };
-  const showResultReflection = showResult;
-  showResult = (r) => {
-    showResultReflection(r);
-    let actions = document.querySelector(".actions");
-    if (!actions) return;
-    let saved = r.reflectionAnswers || [],
-      panelHtml = `<details class="panel" id="reflectionPanel"><summary>感想・気づきを任意でメモする</summary><p class="note">書かなくても結果は保存されています。あとから思ったことがあれば残してください。</p>${REFLECTION_QUESTIONS.map((q) => `<label class="reflection-q">${esc(q.text)}<textarea class="reflection" data-refid="${q.id}" maxlength="${REFLECTION_MAX_LENGTH}" placeholder="任意">${esc(saved.find((x) => x.id === q.id)?.answer || "")}</textarea></label>`).join("")}<button class="btn secondary" id="saveReflection" style="margin-top:14px">メモを保存</button></details>`;
-    actions.insertAdjacentHTML("beforebegin", panelHtml);
-    $("#saveReflection").onclick = () => {
-      let answers = [...root.querySelectorAll("[data-refid]")]
-        .map((t) => ({
-          id: t.dataset.refid,
-          text: REFLECTION_QUESTIONS.find((q) => q.id === t.dataset.refid).text,
-          answer: t.value.trim()
-        }))
-        .filter((x) => x.answer);
-      let h = history(),
-        idx = h.findIndex((x) => x.id === r.id);
-      if (idx >= 0) {
-        h[idx] = { ...h[idx], reflectionAnswers: answers };
-        localStorage.setItem("careerPairwiseLabHistory", JSON.stringify(h));
-      }
-      r.reflectionAnswers = answers;
-      toast("メモを保存しました");
-    };
-  };
-
-  // ==== v1.0.0 追加機能 ====
-  // スタート画面：探索範囲の事前指定（業界・仕事の種類の2軸。比較対象そのものを絞る設定）
-  const homeFilterBase = home;
-  home = () => {
-    homeFilterBase();
-    let modeGrid = root.querySelector(".mode-grid");
-    if (!modeGrid) return;
-    let f = S.scopeFilter || { industryIds: [], roleIds: [] },
-      box = (item, attr, list) =>
-        `<label class="check"><input type="checkbox" data-${attr}="${item.id}" ${list.includes(item.id) ? "checked" : ""}><span><b>${esc(item.label)}</b><small>${esc(item.description)}</small></span></label>`,
-      industryBoxes = INDUSTRY_FILTERS.map((x) => box(x, "scope-industry", f.industryIds)).join(""),
-      roleBoxes = ROLE_FILTERS.map((x) => box(x, "scope-role", f.roleIds)).join("");
-    modeGrid.insertAdjacentHTML(
-      "beforebegin",
-      `<details class="panel" id="scopeFilterPanel"><summary>探索範囲を最初から決めておく（任意）</summary><p class="note">最初から範囲をある程度決めたい人向けの設定です。選んだ業界・仕事の種類に合う候補だけを比較対象にします。未選択なら全候補が対象です。やり直したくなったら「最初から」でいつでも広げ直せます。</p><p class="note">※途中の「探索範囲を選ぶ」画面は候補を減らさずに出題の配合を調整しますが、ここでの設定は比較対象そのものを絞ります。</p><p class="note" style="margin:14px 0 6px"><b>業界・業種</b></p><div class="checks">${industryBoxes}</div><p class="note" style="margin:14px 0 6px"><b>探索したい仕事の種類</b></p><div class="checks">${roleBoxes}</div></details>`
-    );
-    root.querySelectorAll("[data-scope-industry]").forEach(
-      (cb) =>
-        (cb.onchange = () => {
-          let id = cb.dataset.scopeIndustry;
-          if (cb.checked) {
-            if (!S.scopeFilter.industryIds.includes(id)) S.scopeFilter.industryIds.push(id);
-          } else S.scopeFilter.industryIds = S.scopeFilter.industryIds.filter((x) => x !== id);
-        })
-    );
-    root.querySelectorAll("[data-scope-role]").forEach(
-      (cb) =>
-        (cb.onchange = () => {
-          let id = cb.dataset.scopeRole;
-          if (cb.checked) {
-            if (!S.scopeFilter.roleIds.includes(id)) S.scopeFilter.roleIds.push(id);
-          } else S.scopeFilter.roleIds = S.scopeFilter.roleIds.filter((x) => x !== id);
-        })
-    );
-  };
-
-  // MaxDiff・接戦ペアワイズ画面：フェーズ内進捗バー（現在N問目 / 全M問）
-  function phaseProgressBar() {
-    let total = S.queue.length || 1,
-      current = Math.min(S.index + 1, total),
-      pct = Math.round((S.index / total) * 100);
-    return `<div class="progress-shell"><div class="progress-label"><span>現在 ${current}問目 / 全${total}問</span><span>${pct}%</span></div><div class="progress"><i style="width:${Math.min(100, pct)}%"></i></div></div>`;
-  }
-  const maxDiffScreenProgress = maxDiffScreen;
-  maxDiffScreen = () => {
-    maxDiffScreenProgress();
-    let eyebrow = root.querySelector(".eyebrow");
-    if (eyebrow) eyebrow.insertAdjacentHTML("afterend", phaseProgressBar());
-  };
-  const pairProgress = pair;
-  pair = () => {
-    pairProgress();
-    if (["pairwise", "closePairwise"].includes(S.phase)) {
-      let eyebrow = root.querySelector(".eyebrow");
-      if (eyebrow) eyebrow.insertAdjacentHTML("afterend", phaseProgressBar());
-    }
-  };
-
-  // 結果画面：結果コピー・テキストダウンロード
-  function shareText(insight) {
-    let top3 = insight.overall
-        .slice(0, 3)
-        .map((x, i) => `${i + 1}. ${x.label}（${x.displayScore}点）`)
-        .join("\n"),
-      traits3 = insight.topTraits
-        .slice(0, 3)
-        .map((x, i) => `${i + 1}. ${x.label}（${x.score}点）`)
-        .join("\n");
-    return `【キャリア比較ラボ 結果】\n\n■ 候補TOP3\n${top3}\n\n■ 傾向TOP3\n${traits3}`;
-  }
-  function downloadText(filename, text) {
-    let blob = new Blob([text], { type: "text/plain;charset=utf-8" }),
-      url = URL.createObjectURL(blob),
-      a = document.createElement("a");
-    a.href = url;
-    a.download = filename;
-    document.body.append(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
-  }
-  function resultDownloadText(r, insight) {
-    let candidates = insight.overall
-        .slice(0, TOP_N_DISPLAY)
-        .map((x, i) => `${i + 1}. ${x.label}（${x.displayScore}点 / 比較${x.played}回）`)
-        .join("\n"),
-      traits = insight.topTraits
-        .map((x, i) => `${i + 1}. ${x.label}（${x.score}点）`)
-        .join("\n"),
-      prompt = r.aiPrompt || r.ai_prompt || "";
-    return `キャリア比較ラボ 結果メモ（v1.2.1）\n作成日時: ${new Date(r.created_at || Date.now()).toLocaleString("ja-JP")}\n\n■ 候補TOP${TOP_N_DISPLAY}\n${candidates}\n\n■ 傾向TOP${insight.topTraits.length}\n${traits}\n\n■ AIプロンプト\n${prompt}\n`;
-  }
-  const showResultExport = showResult;
-  showResult = (r) => {
-    showResultExport(r);
-    let insight = r.insights || insightFor(r),
-      head = document.querySelector(".result-head");
-    if (!head) return;
-    head.insertAdjacentHTML(
-      "beforeend",
-      `<div class="actions" style="margin-top:16px"><button class="btn secondary" id="shareResult">結果をコピー</button><button class="btn secondary" id="downloadResult">結果をテキストで保存</button></div>`
-    );
-    $("#shareResult").onclick = () => copy(shareText(insight));
-    $("#downloadResult").onclick = () =>
-      downloadText(`career-pairwise-lab-result-${r.id || Date.now()}.txt`, resultDownloadText(r, insight));
-  };
-
-  // 履歴画面：上位候補のスコア推移グラフ（SVG）
   function scoreTrendSeries(h) {
     if (!h.length) return { series: [], count: 0 };
     let chronological = [...h].reverse().slice(-MAX_HISTORY),
@@ -5061,79 +4369,152 @@
         .join("");
     return `<div class="panel"><h3>上位候補のスコア推移</h3><p class="note">直近${count}件の記録から、現在の上位3候補のスコアの推移を表示しています。</p><svg class="viz" viewBox="0 0 ${w} ${hgt}" role="img" aria-label="上位候補のスコア推移グラフ">${gridLines}${lines}</svg><div class="chips" style="margin-top:8px">${legend}</div></div>`;
   }
-  const showHistoryTrend = showHistory;
-  showHistory = () => {
-    showHistoryTrend();
-    let lead = root.querySelector(".lead");
-    if (lead) lead.insertAdjacentHTML("afterend", renderScoreTrendChart(history()));
-  };
-
-  // 結果画面：キャリアコーチ導線
-  // TODO: recipient_id は仮のプレースホルダーです。実際のTwitter(X)ユーザーIDに差し替えてください。
-  const COACH_TWITTER_DM_URL = "https://x.com/messages/compose?recipient_id=YOUR_USERNAME_HERE";
-  const showResultCoach = showResult;
-  showResult = (r) => {
-    showResultCoach(r);
-    let screenEl = root.querySelector(".screen");
-    if (!screenEl) return;
-    screenEl.insertAdjacentHTML(
-      "beforeend",
-      `<div class="panel"><h3>キャリアの話を、作者に相談する</h3><p class="note">このデータを作者に見せて、一緒にキャリアを考えてみよう。</p><a class="btn primary" style="display:block;text-align:center;text-decoration:none" href="${COACH_TWITTER_DM_URL}" target="_blank" rel="noopener">作者に相談する（Twitter DM）</a></div>`
+  function showResult(r) {
+    progress(1);
+    // v0.9の履歴だけは保存済みinsightsをそのまま使い、以降の版は常に最新ロジックで再計算する
+    let current = r.version === "0.9" ? r : { ...r, insights: null },
+      insight = current.insights || insightFor(current),
+      exportInsight = r.insights || insightFor(r),
+      avoid = current.avoidFactors || current.avoid_factors || [],
+      prompt = current.aiPrompt || current.ai_prompt || "",
+      early = current.is_early_result,
+      standard = current.mode === "standard",
+      desired = desiredModesOf(r),
+      filters = explorationFiltersOf(r),
+      industryLabels = filters.industryIds
+        .map((id) => INDUSTRY_FILTERS.find((x) => x.id === id)?.label)
+        .filter(Boolean),
+      roleLabels = filters.roleIds
+        .map((id) => ROLE_FILTERS.find((x) => x.id === id)?.label)
+        .filter(Boolean),
+      strengthLabel =
+        FILTER_STRENGTH_OPTIONS.find((x) => x.id === filters.strength)?.label || "広めに見る";
+    let noteText = early
+      ? "今回は途中までの回答をもとにした仮説です。最後まで進めると、傾向や接戦ポイントがより安定します。"
+      : standard
+        ? "これは標準版の探索結果です。現時点の回答から傾向・候補群・未探索の可能性を整理しています。さらに詳しく見たい場合は、がっつり版で接戦やトレードオフを深掘りできます。"
+        : current.mode === "explore_more"
+          ? "これは未探索候補の追加比較を反映した結果です。まだ比較が浅かった候補の位置づけを確かめるための探索です。"
+          : "これはがっつり版の探索結果です。より多くの比較とトレードオフをもとに、迷いの構造と次の検証行動を整理しています。";
+    let headHtml = `<div class="result-head"><div class="eyebrow">CAREER EXPLORATORY MAP · v1.3.0 · ${modeLabelOf(current.mode)}</div><h2>これは回答傾向をもとにした探索用の仮説です。</h2><p>${esc(noteText)}</p><div class="actions" style="margin-top:16px"><button class="btn secondary" id="shareResult">結果をコピー</button><button class="btn secondary" id="downloadResult">結果をテキストで保存</button><button class="btn secondary" id="downloadJson">結果をJSONで保存</button></div></div>`;
+    let disclaimerHtml = `<div class="panel"><p class="note">スコアは回答傾向をもとにした探索用の推定値です。比較回数が少ない候補は中央寄りに補正しており、追加比較によって順位が変わる可能性があります。</p></div>`;
+    let tradeoffPanelHtml = "";
+    if (!standard) {
+      let trade =
+        (current.tradeoffLogs || [])
+          .map(
+            (x) =>
+              `<div class="contest">${esc(x.aDescription || x.a)} ↔ ${esc(x.bDescription || x.b)}：${esc(x.answer)}</div>`
+          )
+          .join("") || '<p class="note">回答なし</p>';
+      tradeoffPanelHtml = `<div class="panel"><h3>トレードオフ傾向</h3>${trade}</div>`;
+    }
+    let settingsHtml = `<details class="panel"><summary>今回の探索設定を見る</summary><p class="note"><b>希望する・気になるキャリア形態：</b></p><div class="chips">${desired.map((x) => `<span class="chip">${esc(x.label)}</span>`).join("") || '<span class="note">未設定</span>'}</div><p class="note" style="margin-top:12px"><b>業界・業種フィルター：</b></p><div class="chips">${industryLabels.length ? industryLabels.map((l) => `<span class="chip">${esc(l)}</span>`).join("") : '<span class="note">指定なし</span>'}</div><p class="note" style="margin-top:12px"><b>職種フィルター：</b></p><div class="chips">${roleLabels.length ? roleLabels.map((l) => `<span class="chip">${esc(l)}</span>`).join("") : '<span class="note">指定なし</span>'}</div><p class="note" style="margin-top:12px"><b>探索の広さ：</b> ${esc(strengthLabel)}</p><p class="note" style="margin-top:12px">この設定は、4択比較に出す候補の配合を調整するために使っています。結果は候補を絞り切ったものではなく、探索用の仮説です。</p></details>`;
+    let saved = current.reflectionAnswers || [],
+      reflectionHtml = `<details class="panel" id="reflectionPanel"><summary>感想・気づきを任意でメモする</summary><p class="note">書かなくても結果は保存されています。あとから思ったことがあれば残してください。</p>${REFLECTION_QUESTIONS.map((q) => `<label class="reflection-q">${esc(q.text)}<textarea class="reflection" data-refid="${q.id}" maxlength="${REFLECTION_MAX_LENGTH}" placeholder="任意">${esc(saved.find((x) => x.id === q.id)?.answer || "")}</textarea></label>`).join("")}<button class="btn secondary" id="saveReflection" style="margin-top:14px">メモを保存</button></details>`;
+    let deepContinueHtml = standard
+      ? '<button class="btn primary" id="deepContinue" style="margin-top:16px">この結果を引き継いでがっつり分析する</button>'
+      : "";
+    let resultBackHtml = S.answerTrail.length
+      ? '<button class="btn ghost" id="resultBack" style="width:100%;margin-top:10px">直前の回答に戻る</button>'
+      : "";
+    let coachHtml = `<div class="panel"><h3>キャリアの話を、作者に相談する</h3><p class="note">このデータを作者に見せて、一緒にキャリアを考えてみよう。</p><a class="btn primary" style="display:block;text-align:center;text-decoration:none" href="${COACH_TWITTER_DM_URL}" target="_blank" rel="noopener">作者に相談する（Twitter DM）</a></div>`;
+    screen(
+      headHtml +
+        disclaimerHtml +
+        bars("関心が寄っている可能性", insight.overall, "positive") +
+        renderAvoidLeaningPanel(insight) +
+        bars("会社員寄り候補", insight.company) +
+        bars("個人活動寄り候補", insight.individual) +
+        bars("創作・副業候補", insight.creative) +
+        renderCloseContestsPanel(insight) +
+        renderUnexploredPanel(insight) +
+        renderMisfitPanel(insight) +
+        renderAvoidFactorsPanel(avoid) +
+        renderNextActionsPanel(insight) +
+        renderTraitRadarPanel(insight) +
+        renderPossibilityMapPanel(insight) +
+        tradeoffPanelHtml +
+        settingsHtml +
+        renderPromptPanel(prompt) +
+        `<div class="panel"><div class="saved">この結果は端末内の履歴に保存されました</div></div>` +
+        deepContinueHtml +
+        resultBackHtml +
+        reflectionHtml +
+        `<div class="actions"><button class="btn ghost" id="reset">もう一度やる</button><button class="btn primary" id="hist">履歴を見る</button></div>` +
+        coachHtml
     );
-  };
-
-  // ==== v1.1 追加機能 ====
-  // スタート画面：途中セッションの再開導線
-  const homeResumeBase = home;
-  home = () => {
-    homeResumeBase();
-    let sess = loadSession();
-    if (!sess) return;
-    let anchorEl = root.querySelector("#scopeFilterPanel") || root.querySelector(".mode-grid");
-    if (!anchorEl) return;
-    let mode = sess.state.experienceMode,
-      cfg =
-        mode === "deep_continuation"
-          ? MODE_CONFIG.deepContinuation
-          : MODE_CONFIG[mode] || MODE_CONFIG.standard;
-    anchorEl.insertAdjacentHTML(
-      "beforebegin",
-      `<div class="panel" id="resumePanel"><h3>前回の続きがあります</h3><p class="note">${esc(cfg.label)} · ${sess.state.questionCount || 0}問回答済み · ${esc(new Date(sess.saved_at).toLocaleString("ja-JP"))} 保存</p><button class="btn primary" id="resumeBtn" style="width:100%">続きから再開する</button><button class="btn ghost" id="discardBtn" style="width:100%;margin-top:10px">破棄して最初から</button></div>`
-    );
-    $("#resumeBtn").onclick = resumeSession;
-    $("#discardBtn").onclick = () => {
-      clearSession();
-      home();
+    $("#copy").onclick = () => copy(prompt);
+    $("#reset").onclick = reset;
+    $("#hist").onclick = showHistory;
+    let exploreBtn = $("#exploreMore");
+    if (exploreBtn) exploreBtn.onclick = () => startUnexploredRound(current);
+    if (standard && $("#deepContinue"))
+      $("#deepContinue").onclick = () => startContinuation(current);
+    if (S.answerTrail.length && $("#resultBack"))
+      $("#resultBack").onclick = () => {
+        saveHistoryList(history().filter((x) => x.id !== r.id));
+        goBack();
+      };
+    $("#saveReflection").onclick = () => {
+      let answers = [...root.querySelectorAll("[data-refid]")]
+        .map((t) => ({
+          id: t.dataset.refid,
+          text: REFLECTION_QUESTIONS.find((q) => q.id === t.dataset.refid).text,
+          answer: t.value.trim()
+        }))
+        .filter((x) => x.answer);
+      let h = history(),
+        idx = h.findIndex((x) => x.id === r.id);
+      if (idx >= 0) {
+        h[idx] = { ...h[idx], reflectionAnswers: answers };
+        saveHistoryList(h);
+      }
+      r.reflectionAnswers = answers;
+      toast("メモを保存しました");
     };
-  };
-
-  // 結果画面：JSONエクスポート
-  const showResultJsonExport = showResult;
-  showResult = (r) => {
-    showResultJsonExport(r);
-    let dl = $("#downloadResult");
-    if (!dl) return;
-    dl.insertAdjacentHTML(
-      "afterend",
-      `<button class="btn secondary" id="downloadJson">結果をJSONで保存</button>`
-    );
+    $("#shareResult").onclick = () => copy(shareText(exportInsight));
+    $("#downloadResult").onclick = () =>
+      downloadText(
+        `career-pairwise-lab-result-${r.id || Date.now()}.txt`,
+        resultDownloadText(r, exportInsight)
+      );
     $("#downloadJson").onclick = () =>
       downloadText(
         `career-pairwise-lab-result-${r.id || Date.now()}.json`,
         JSON.stringify(r, null, 2)
       );
-  };
-
-  // 履歴画面：JSONインポート
-  const showHistoryImport = showHistory;
-  showHistory = () => {
-    showHistoryImport();
-    let lead = root.querySelector(".lead");
-    if (!lead) return;
-    lead.insertAdjacentHTML(
-      "afterend",
-      `<div class="actions" style="margin:12px 0"><button class="btn secondary" id="importJson">JSONファイルから読み込む</button><input type="file" id="importJsonFile" accept="application/json,.json" hidden></div>`
+  }
+  function showHistory() {
+    progress(0);
+    document
+      .querySelectorAll(".tab")
+      .forEach((x) => x.classList.toggle("active", x.dataset.tab === "history"));
+    let h = history();
+    screen(
+      `<div class="eyebrow">LOCAL HISTORY</div><h2>過去の比較結果</h2><p class="lead">この端末内に最大${MAX_HISTORY}件保存されます。</p><div class="actions" style="margin:12px 0"><button class="btn secondary" id="importJson">JSONファイルから読み込む</button><input type="file" id="importJsonFile" accept="application/json,.json" hidden></div>${renderScoreTrendChart(h)}${
+        h.length
+          ? `<div class="history">${h
+              .map((x) => {
+                let desired =
+                  desiredModesOf(x)
+                    .map((y) => esc(y.label))
+                    .join("、") || "探索方向未設定";
+                return `<button class="history-item" data-id="${esc(x.id)}"><time>${esc(new Date(x.created_at).toLocaleString("ja-JP"))}</time><h3>${modeLabelOf(x.mode)} · ${desired} · ${esc(x.user_status?.label || "不明")}</h3><span class="note">${esc(x.version || "旧版")} · ${esc(x.question_count || "—")}問 · ${getRank(
+                  x,
+                  "career"
+                )
+                  .slice(0, 3)
+                  .map((y) => esc(y.label))
+                  .join("、")}</span></button>`;
+              })
+              .join("")}</div>`
+          : `<div class="empty">まだ結果がありません。</div>`
+      }`
     );
+    root
+      .querySelectorAll("[data-id]")
+      .forEach((b) => (b.onclick = () => showResult(h.find((x) => x.id === b.dataset.id))));
     let input = $("#importJsonFile");
     $("#importJson").onclick = () => input.click();
     input.onchange = () => {
@@ -5143,9 +4524,9 @@
         try {
           let r = JSON.parse(text);
           if (!r || typeof r !== "object" || !r.id || !r.created_at) throw new Error("invalid");
-          let h = history().filter((x) => x.id !== r.id);
-          h.unshift(r);
-          localStorage.setItem("careerPairwiseLabHistory", JSON.stringify(h.slice(0, MAX_HISTORY)));
+          let list = history().filter((x) => x.id !== r.id);
+          list.unshift(r);
+          saveHistoryList(list.slice(0, MAX_HISTORY));
           toast("結果を読み込みました");
           showHistory();
         } catch {
@@ -5153,9 +4534,416 @@
         }
       });
     };
-  };
+  }
+  function continuationIntro(source) {
+    screen(
+      `<div class="section-intro"><div class="section-no">＋</div><div class="eyebrow">標準版 → がっつり版</div><h2>ここから、標準版の結果をもとに深掘りします。</h2><p class="lead">次は、すでに見えている傾向をさらに確かめるために、接戦だった候補、迷いが出た候補、まだ十分に比べていない候補を追加で比較します。</p><div class="tip">同じ診断をやり直すのではなく、ここまでの回答を引き継いだ追加分析です。</div><button class="btn primary" id="continueDeep">がっつり分析を始める</button></div>`
+    );
+    $("#continueDeep").onclick = () => transition(phases()[0]);
+  }
 
-  // ==== 起動処理 ====
+  // ==================================================================
+  // 6. NAVIGATION — 遷移・フェーズ進行・戻る・リセット
+  // ==================================================================
+  const phases = () =>
+    S.experienceMode === "standard"
+      ? ["anchor", "maxDiff", "pairwise", S.mode === "company" ? "avoid" : "risk"]
+      : S.experienceMode === "deep"
+        ? ["anchor", "maxDiff", "pairwise", "tradeoff", S.mode === "company" ? "avoid" : "risk"]
+        : S.experienceMode === "explore_more"
+          ? ["additionalMaxDiff"]
+          : ["additionalMaxDiff", "closePairwise", "tradeoff"];
+  function activeConfig() {
+    return S.experienceMode === "deep_continuation"
+      ? MODE_CONFIG.deepContinuation
+      : MODE_CONFIG[S.experienceMode || "standard"];
+  }
+  function desiredModeExplanation() {
+    let ids = (S.desiredCareerModes || []).filter((x) => x !== "open_exploration");
+    if (!ids.length) return "";
+    let labels = ids
+      .map((id) => DESIRED_CAREER_MODES.find((m) => m.id === id)?.label)
+      .filter(Boolean);
+    return `今回の比較では、選んだキャリア形態を少し多めに出しつつ、他の可能性も混ぜて表示します。<br><b>今回やや多めに出す候補：</b><br>${labels.map((l) => "・" + esc(l)).join("<br>")}<br>ただし、比較の幅を保つため、創作・個人事業・起業などの候補も一部混ぜます。`;
+  }
+  function transition(phase) {
+    saveSession();
+    let d = intros[phase],
+      list = phases(),
+      i = phase === "result" ? list.length : Math.max(0, list.indexOf(phase)),
+      cfg = activeConfig(),
+      continuation = S.experienceMode === "deep_continuation",
+      exploreMore = S.experienceMode === "explore_more",
+      progressLabel = exploreMore
+        ? `未探索チェック<br>追加回答 ${S.questionCount} / 約${cfg.maxAnswers}`
+        : continuation
+          ? `がっつり版：追加分析 ${i + 1} / ${list.length + 1}<br>追加回答 ${S.questionCount} / 約${cfg.maxAnswers}`
+          : `${cfg.label}：ステップ ${i + 3} / ${list.length + 4}<br>回答 ${S.questionCount} / 約${cfg.maxAnswers}`,
+      modeNote = ["maxDiff", "additionalMaxDiff"].includes(phase) ? desiredModeExplanation() : "",
+      scopeNote =
+        (S.scopeFilter?.industryIds || []).length || (S.scopeFilter?.roleIds || []).length
+          ? "最初に選んだ探索範囲の中で、候補を早期除外せず情報量の高い質問を優先します。"
+          : "候補を早期除外せず、情報量の高い質問を優先します。";
+    if (exploreMore && phase === "additionalMaxDiff")
+      d = [
+        "＋",
+        "未探索チェック",
+        "まだ比較していない候補を中心に、4択で5問だけ追加比較します。",
+        "既に見えている傾向は前提にせず、今の気になり度で選んでください。"
+      ];
+    progress(phase === "result" ? 1 : i / list.length);
+    screen(
+      `<div class="section-intro"><div class="section-no">${d[0]}</div><div class="eyebrow">${progressLabel}</div><h2>次は「${d[1]}」${phase === "result" ? "です" : "を行います"}</h2><p class="lead">${d[2]}</p>${phase === "result" ? "" : `<p class="note">${scopeNote}</p>`}${modeNote ? `<p class="note">${modeNote}</p>` : ""}<div class="tip"><b>回答のコツ</b><br>${d[3]}</div><button class="btn primary" id="next">次へ</button><div class="navrow"><span></span><button class="link" id="reset">最初から</button></div></div>`
+    );
+    $("#next").onclick = () => (phase === "result" ? complete() : startPhase(phase));
+    $("#reset").onclick = reset;
+  }
+  function pushTrail(entry) {
+    S.answerTrail.push(entry);
+  }
+  function removeLastMatching(array, predicate) {
+    for (let i = array.length - 1; i >= 0; i--)
+      if (predicate(array[i])) {
+        array.splice(i, 1);
+        return;
+      }
+  }
+  function goBack() {
+    let entry = S.answerTrail.pop();
+    if (!entry) {
+      let nav = S.navigationStack.pop();
+      if (nav?.screen === "explorationFilters") selectExplorationFilters();
+      else if (nav?.screen === "desiredCareerModes") selectDesiredCareerModes();
+      return;
+    }
+    S.questionCount = Math.max(0, S.questionCount - 1);
+    if (entry.type === "pair") {
+      removeLastMatching(
+        S.logs,
+        (x) => x === entry.payload || x.questionKey === entry.payload.questionKey
+      );
+      if (entry.phase === "anchor")
+        removeLastMatching(S.anchorAnswers, (x) => x.questionKey === entry.payload.questionKey);
+      if (["pairwise", "closePairwise"].includes(entry.phase))
+        removeLastMatching(S.pairwiseLogs, (x) => x.questionKey === entry.payload.questionKey);
+      if (entry.phase === "tradeoff")
+        removeLastMatching(S.tradeoffLogs, (x) => x.questionKey === entry.payload.questionKey);
+    } else if (entry.type === "maxDiff")
+      removeLastMatching(S.maxDiffLogs, (x) => x.question_id === entry.payload.question_id);
+    else if (entry.type === "reflection")
+      removeLastMatching(S.reflectionAnswers, (x) => x.id === entry.payload.id);
+    else if (entry.type === "avoid") S.avoid = [...(entry.payload.selected || [])];
+    recalculateAllScores();
+    saveSession();
+    S.phase = entry.phase;
+    S.index = entry.index;
+    S.queue = S.phaseQueues[entry.phase] || S.queue;
+    S.editingAnswer = entry;
+    if (entry.type === "pair") pair();
+    else if (entry.type === "maxDiff") maxDiffScreen();
+    else if (entry.type === "reflection") reflectionScreen();
+    else checks(candidates(entry.phase));
+  }
+  function startPhase(phase) {
+    S.phase = phase;
+    S.index = 0;
+    S.editingAnswer = null;
+    let cfg = activeConfig(),
+      list;
+    if (["avoid", "risk"].includes(phase)) {
+      S.phaseQueues[phase] = candidates(phase);
+      checks(S.phaseQueues[phase]);
+      return;
+    }
+    if (["maxDiff", "additionalMaxDiff"].includes(phase)) {
+      let count = phase === "maxDiff" ? cfg.flow.maxDiff : cfg.flow.additionalMaxDiff;
+      S.queue = maxDiffSets(count);
+      S.phaseQueues[phase] = S.queue;
+      list = [...new Set(S.queue.flat())];
+      S.selected[phase] = list;
+      ensureStats("career", list);
+      maxDiffScreen();
+      return;
+    }
+    if (phase === "reflection") {
+      S.phaseQueues[phase] = REFLECTION_QUESTIONS;
+      reflectionScreen();
+      return;
+    }
+    if (phase === "anchor") {
+      S.queue = anchorPairs(cfg.flow.anchor);
+    } else if (["pairwise", "closePairwise"].includes(phase)) {
+      let count = phase === "pairwise" ? cfg.flow.pairwise : cfg.flow.closePairwise;
+      S.queue = pairwisePairs(count);
+    } else S.queue = tradeoffPairs(cfg.flow.tradeoff);
+    S.phaseQueues[phase] = S.queue;
+    list = [...new Set(S.queue.flatMap((x) => x.slice(0, 2)))];
+    S.selected[phase] = list;
+    if (phase !== "tradeoff") ensureStats("career", list);
+    pair();
+  }
+  function answer(ans, a, b, kind, reasonTag) {
+    let log = {
+      type: kind,
+      questionKey: `${S.phase}_${S.index}`,
+      phase: S.phase,
+      aId: a.id,
+      bId: b.id,
+      a: a.label,
+      b: b.label,
+      aDescription: a.description,
+      bDescription: b.description,
+      aTraits: a.trait_weights || {},
+      bTraits: b.trait_weights || {},
+      answer: ans,
+      reason_tag: reasonTag || null,
+      comparisonType: kind
+    };
+    S.logs.push(log);
+    if (S.phase === "anchor") S.anchorAnswers.push(log);
+    if (["pairwise", "closePairwise"].includes(S.phase)) S.pairwiseLogs.push(log);
+    if (S.phase === "tradeoff") S.tradeoffLogs.push(log);
+    pushTrail({ type: "pair", phase: S.phase, index: S.index, payload: log });
+    recalculateAllScores();
+    S.questionCount++;
+    S.index++;
+    S.editingAnswer = null;
+    if (S.questionCount >= activeConfig().maxAnswers) {
+      transition(
+        S.experienceMode === "standard" || S.experienceMode === "deep"
+          ? S.mode === "company"
+            ? "avoid"
+            : "risk"
+          : phases()[phases().length - 1]
+      );
+    } else if (S.index < S.queue.length) pair();
+    else finishPhase();
+  }
+  function earlyResult() {
+    S.isEarlyResult = true;
+    transition(
+      ["deep_continuation", "explore_more"].includes(S.experienceMode)
+        ? "result"
+        : S.mode === "company"
+          ? "avoid"
+          : "risk"
+    );
+  }
+  function finishPhase() {
+    S.rankings[bucketFor(S.phase)] = ranking(S.phase);
+    let i = phases().indexOf(S.phase);
+    if (i < phases().length - 1) transition(phases()[i + 1]);
+    else transition("result");
+  }
+  function complete() {
+    let rec = record();
+    save(rec);
+    clearSession();
+    showResult(rec);
+  }
+  function reset() {
+    if (S.view !== "home" && !confirm("入力中の内容を消して最初からやり直しますか？")) return;
+    clearSession();
+    S = freshState();
+    document
+      .querySelectorAll(".tab")
+      .forEach((x) => x.classList.toggle("active", x.dataset.tab === "app"));
+    home();
+  }
+  function startContinuation(r) {
+    let branch = r.career_branch || branchOf(r),
+      desired = desiredModesOf(r);
+    S = {
+      ...S,
+      ...stateFromRecord(r, branch, desired),
+      view: "continuation",
+      experienceMode: "deep_continuation"
+    };
+    recalculateAllScores();
+    continuationIntro(r);
+  }
+  // 結果画面から未探索候補だけを4択で追加比較する小ループ（v1.1）
+  function startUnexploredRound(r) {
+    let branch = r.career_branch || branchOf(r),
+      desired = desiredModesOf(r);
+    S = {
+      ...S,
+      ...stateFromRecord(r, branch, desired),
+      view: "exploreMore",
+      experienceMode: "explore_more"
+    };
+    recalculateAllScores();
+    transition("additionalMaxDiff");
+  }
+
+  // ==================================================================
+  // 7. EXPORT / IMPORT — 履歴レコード・AIプロンプト・共有テキスト
+  // ==================================================================
+  function record() {
+    recalculateAllScores();
+    let now = new Date().toISOString(),
+      status = { id: S.status, label: label(D.status, S.status) },
+      desired = S.desiredCareerModes
+        .map((id) => DESIRED_CAREER_MODES.find((x) => x.id === id))
+        .filter(Boolean),
+      overall = ranking("career"),
+      candidateStats = {
+        career: Object.values(S.scores.career || {}).map((x) => finalizeStat({ ...x }))
+      },
+      completion =
+        S.experienceMode === "standard"
+          ? "standard_completed"
+          : S.experienceMode === "explore_more"
+            ? "explore_more_completed"
+            : "deep_completed",
+      displayTraits = normalizeTraitScores(S.userTraits, S.questionCount);
+    let base = {
+      id: String(Date.now()),
+      created_at: now,
+      updated_at: now,
+      version: "1.3.0",
+      mode: S.experienceMode,
+      status: completion,
+      source_session_id: S.sourceSessionId,
+      user_status: status,
+      desired_career_modes: desired,
+      exploration_filters: {
+        industry_ids: [...(S.explorationFilters?.industryIds || [])],
+        role_ids: [...(S.explorationFilters?.roleIds || [])],
+        strength: S.explorationFilters?.strength || "broad"
+      },
+      career_mode: null,
+      career_branch: S.mode,
+      anchorAnswers: S.anchorAnswers,
+      cardSortLogs: S.cardSortLogs,
+      maxDiffLogs: S.maxDiffLogs,
+      pairwiseLogs: S.pairwiseLogs,
+      tradeoffLogs: S.tradeoffLogs,
+      reflectionAnswers: S.reflectionAnswers,
+      avoidFactors: S.avoid.map((id) => label(S.mode === "company" ? D.avoid : D.risk, id)),
+      candidateStats,
+      userTraits: { ...S.userTraits },
+      rawTraitScores: { ...S.userTraits },
+      displayTraits,
+      rankings: { overall },
+      comparisonLogs: S.logs,
+      question_count: S.questionCount,
+      is_early_result: S.isEarlyResult
+    };
+    let insight = insightFor(base);
+    base.possibilityMap = insight.possibilityMap;
+    base.closeContests = insight.closeContests;
+    base.unexploredCandidates = insight.unexplored;
+    base.resultSummary = {
+      mode: activeConfig().label,
+      lean: insight.lean,
+      desiredCareerModes: desired.map((x) => x.label),
+      topCandidates: insight.overall.slice(0, TOP_N_DISPLAY).map((x) => x.label),
+      topTraits: insight.topTraits.slice(0, TOP_N_DISPLAY).map((x) => x.label)
+    };
+    base.insights = insight;
+    base.aiPrompt = promptFor(base);
+    return base;
+  }
+  function promptFor(r) {
+    let insight = r.insights || insightFor(r),
+      deep = r.mode !== "standard",
+      desired =
+        desiredModesOf(r)
+          .map((x) => x.label)
+          .join("、") || "未設定",
+      filters = explorationFiltersOf(r),
+      industryLabels =
+        filters.industryIds
+          .map((id) => INDUSTRY_FILTERS.find((x) => x.id === id)?.label)
+          .filter(Boolean)
+          .join("、") || "指定なし",
+      roleLabels =
+        filters.roleIds
+          .map((id) => ROLE_FILTERS.find((x) => x.id === id)?.label)
+          .filter(Boolean)
+          .join("、") || "指定なし",
+      strengthLabel =
+        FILTER_STRENGTH_OPTIONS.find((x) => x.id === filters.strength)?.label || "広めに見る",
+      maxdiff =
+        (r.maxDiffLogs || [])
+          .slice(-8)
+          .map((x) => `${x.best} > ${x.neutral_ids?.length || 0}候補 > ${x.worst}`)
+          .join(" / ") || "なし",
+      pairs =
+        (r.pairwiseLogs || [])
+          .slice(-8)
+          .map((x) => `${x.a} vs ${x.b}: ${x.answer}`)
+          .join(" / ") || "なし",
+      fmt = (list) =>
+        list
+          .slice(0, TOP_N_DISPLAY)
+          .map(
+            (x, i) =>
+              `${i + 1}. ${x.label}: displayScore ${x.displayScore} / 比較${x.played} / 信頼度${getConfidenceLabel(x.confidence)} / Best ${x.bestCount || 0} / Worst ${x.worstCount || 0}`
+          )
+          .join("\n"),
+      reasonTags =
+        (r.pairwiseLogs || [])
+          .filter((x) => x.reason_tag)
+          .map(
+            (x) =>
+              `- ${x.answer === "a" ? x.a : x.b}（vs ${x.answer === "a" ? x.b : x.a}）: ${REASON_TAGS.find((t) => t.id === x.reason_tag)?.label || x.reason_tag}`
+          )
+          .join("\n") || "なし",
+      reflection =
+        (r.reflectionAnswers || [])
+          .filter((x) => x.answer)
+          .map((x) => `- ${x.text}: ${x.answer}`)
+          .join("\n") || "なし",
+      tradeoffs =
+        (r.tradeoffLogs || [])
+          .map((x) => `- ${x.aDescription} / ${x.bDescription}: ${x.answer}`)
+          .join("\n") || "なし",
+      low = scoreCandidates(r)
+        .filter((x) => x.confidence < CONFIDENCE_MID)
+        .slice(0, TOP_N_DISPLAY)
+        .map((x) => x.label)
+        .join("、");
+    return `現在地: ${r.user_status?.label || "不明"}\n希望する・気になるキャリア形態: ${desired}\n業界・業種フィルター: ${industryLabels}\n職種フィルター: ${roleLabels}\n探索の広さ: ${strengthLabel}\nこれらは候補除外ではなく、MaxDiff候補セットの配合を調整する探索設定として使用しています。\nMaxDiff結果: ${maxdiff}\n接戦ペアワイズ結果: ${pairs}\n\nこれは${deep ? "がっつり版" : "標準版"}の探索型キャリア比較ログです。${r.mode === "deep_continuation" ? "標準版の回答を引き継いだ追加分析です。" : ""}スコアは確定値ではなく探索用の推定値です。\n\n回答数: ${r.question_count}\ntrait上位: ${insight.topTraits.map((x) => `${x.label} ${x.score}`).join("、")}\n可能性マップ: ${insight.lean}\n総合候補:\n${fmt(insight.overall)}\n会社員寄り:\n${fmt(insight.company)}\n個人活動寄り:\n${fmt(insight.individual)}\n創作・副業寄り:\n${fmt(insight.creative)}\n接戦・迷い: ${insight.closeContests.join(" / ")}\n信頼度が低い候補: ${low}\n未探索: ${insight.unexplored.map((x) => x.label).join("、")}\n今は距離を感じている候補（仮説）: ${insight.avoidLeaning.map((x) => `${x.label}(Worst${x.worstCount || 0}回)`).join("、") || "該当なし"}\nフィットしにくいかもしれない環境（仮説）: ${insight.misfitEnvironments.map((x) => `${x.hint}（関連傾向:${x.label}）`).join("、")}\n避けたい要素: ${(r.avoidFactors || []).join("、") || "未選択"}\n接戦比較で選んだ理由タグ:\n${reasonTags}\nトレードオフ回答:\n${tradeoffs}\n内省回答:\n${reflection}\n\n値を断定せず、迷いの構造と反証すべき問いを示してください。信頼度の低い候補から追加で比較すべき組み合わせ、話を聞く相手、小さく試す行動を提案してください。距離を感じている候補や環境についても、決めつけずに仮説として深掘りする問いを含めてください。`;
+  }
+  function shareText(insight) {
+    let top3 = insight.overall
+        .slice(0, 3)
+        .map((x, i) => `${i + 1}. ${x.label}（${x.displayScore}点）`)
+        .join("\n"),
+      traits3 = insight.topTraits
+        .slice(0, 3)
+        .map((x, i) => `${i + 1}. ${x.label}（${x.score}点）`)
+        .join("\n");
+    return `【キャリア比較ラボ 結果】\n\n■ 候補TOP3\n${top3}\n\n■ 傾向TOP3\n${traits3}`;
+  }
+  function downloadText(filename, text) {
+    let blob = new Blob([text], { type: "text/plain;charset=utf-8" }),
+      url = URL.createObjectURL(blob),
+      a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.append(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }
+  function resultDownloadText(r, insight) {
+    let candidates = insight.overall
+        .slice(0, TOP_N_DISPLAY)
+        .map((x, i) => `${i + 1}. ${x.label}（${x.displayScore}点 / 比較${x.played}回）`)
+        .join("\n"),
+      traits = insight.topTraits
+        .map((x, i) => `${i + 1}. ${x.label}（${x.score}点）`)
+        .join("\n"),
+      prompt = r.aiPrompt || r.ai_prompt || "";
+    return `キャリア比較ラボ 結果メモ（v1.3.0）\n作成日時: ${new Date(r.created_at || Date.now()).toLocaleString("ja-JP")}\n\n■ 候補TOP${TOP_N_DISPLAY}\n${candidates}\n\n■ 傾向TOP${insight.topTraits.length}\n${traits}\n\n■ AIプロンプト\n${prompt}\n`;
+  }
+
+  // ==================================================================
+  // 8. BOOT — 初期化
+  // ==================================================================
   document
     .querySelectorAll(".tab")
     .forEach((t) => (t.onclick = () => (t.dataset.tab === "history" ? showHistory() : reset())));
