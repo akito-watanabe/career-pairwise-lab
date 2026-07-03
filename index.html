@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#17261f">
-  <title>キャリア比較ラボ v1.3.0</title>
+  <title>キャリア比較ラボ v1.4.0</title>
   <style>
   /* ==== ベース：カラーパレット・リセット ==== */
   :root {
@@ -1177,6 +1177,18 @@
     display: grid;
     grid-template-columns: repeat(3, 1fr);
   }
+
+  /* v1.4 前回との比較（順位変動） */
+  .rank em.move-up {
+    color: #2e6b52;
+    font-style: normal;
+    font-weight: 700;
+  }
+  .rank em.move-down {
+    color: #b3593f;
+    font-style: normal;
+    font-weight: 700;
+  }
 </style>
 </head>
 <body>
@@ -1521,6 +1533,25 @@
     { id: "stability", label: "安定" },
     { id: "freedom", label: "自由度" }
   ];
+  // 反証モード（v1.4.0）：1位候補について「まだ調べていないこと」の選択肢
+  const FALSIFICATION_UNEXPLORED_TOPICS = [
+    { id: "income_reality", label: "収入の実態" },
+    { id: "daily_work", label: "一日の仕事内容" },
+    { id: "required_skills", label: "必要なスキル" },
+    { id: "worker_voices", label: "働く人の声" }
+  ];
+  // 「思いつかない」「説明できない」を選んだ人に返す文言
+  const FALSIFICATION_SUPPORT_TEXT =
+    "それも大事な発見です。言語化できない魅力や不安は、実際に人に会って確かめる価値があります。";
+  const FALSIFICATION_WEAKNESS_COUNT = 4; // 弱点仮説の提示数
+  // trait由来の仮説が4つに満たない候補向けの汎用弱点仮説（どの仕事にもありうる確認点）
+  const FALSIFICATION_GENERIC_WEAKNESSES = [
+    { id: "generic_income", label: "収入・待遇が期待と合わないこと" },
+    { id: "generic_workload", label: "労働時間や体力面の負荷が想像より大きいこと" },
+    { id: "generic_culture", label: "職場の人間関係や文化が合わないこと" }
+  ];
+  const REASON_TAG_MIN_COUNT = 2; // 判断軸メタ分析を表示する最小タグ回答数
+  const RANK_COMPARE_COUNT = 5; // 前回比較で追う上位候補数
   const REFLECTION_QUESTIONS = [
     {
       id: "reflection_surprise",
@@ -3540,6 +3571,61 @@
     };
   }
 
+  // ==== 判断軸メタ分析（v1.4.0）：接戦ペアワイズの理由タグを集計する ====
+  function reasonTagSummary(r) {
+    let counts = {};
+    (r.pairwiseLogs || []).forEach((x) => {
+      if (x.reason_tag) counts[x.reason_tag] = (counts[x.reason_tag] || 0) + 1;
+    });
+    let total = Object.values(counts).reduce((n, x) => n + x, 0),
+      ranked = REASON_TAGS.filter((t) => counts[t.id]).sort((a, b) => counts[b.id] - counts[a.id]),
+      top = ranked.slice(0, 2).map((t) => ({ id: t.id, label: t.label, count: counts[t.id] })),
+      unchosen = REASON_TAGS.filter((t) => !counts[t.id]).map((t) => t.label);
+    return { counts, total, top, unchosen };
+  }
+  // ==== 時系列比較（v1.4.0）：直前の記録との順位変動 ====
+  function previousRecordOf(r) {
+    let list = history(),
+      idx = list.findIndex((x) => x.id === r.id);
+    if (idx >= 0) return list[idx + 1] || null;
+    return list.find((x) => new Date(x.created_at) < new Date(r.created_at)) || null;
+  }
+  function rankComparison(r, prev) {
+    if (!prev) return null;
+    let cur = getRank(r, "career").slice(0, RANK_COMPARE_COUNT),
+      prevRanks = getRank(prev, "career");
+    if (!cur.length || !prevRanks.length) return null;
+    let rows = cur.map((x, i) => {
+        let pi = prevRanks.findIndex((y) => y.id === x.id);
+        return {
+          id: x.id,
+          label: x.label,
+          rank: i + 1,
+          prevRank: pi >= 0 ? pi + 1 : null,
+          delta: pi >= 0 ? pi - i : null // 正の値=順位が上がった
+        };
+      }),
+      riser = rows.filter((x) => (x.delta || 0) > 0).sort((a, b) => b.delta - a.delta)[0] || null,
+      days = Math.max(
+        1,
+        Math.round((new Date(r.created_at) - new Date(prev.created_at)) / 86400000)
+      ),
+      when = days >= 60 ? `${Math.round(days / 30)}ヶ月` : days >= 14 ? `${Math.round(days / 7)}週間` : `${days}日`,
+      curTags = r.reason_tag_summary || reasonTagSummary(r),
+      prevTags = prev.reason_tag_summary || reasonTagSummary(prev),
+      tagChange = null;
+    if (curTags.total >= REASON_TAG_MIN_COUNT && prevTags.total >= REASON_TAG_MIN_COUNT) {
+      let curTop = curTags.top[0],
+        prevTop = prevTags.top[0];
+      if (curTop && prevTop)
+        tagChange =
+          curTop.id === prevTop.id
+            ? `接戦で選ぶ軸は前回と同じく『${curTop.label}』が中心です。`
+            : `接戦で選ぶ軸が『${prevTop.label}』中心から『${curTop.label}』中心に変わっています。`;
+    }
+    return { rows, riser, when, tagChange, sameMode: r.mode === prev.mode };
+  }
+
   // ==================================================================
   // 4. STATE — セッション状態・保存・復元
   // ==================================================================
@@ -3867,7 +3953,7 @@
       roleBoxes = ROLE_FILTERS.map((x) => box(x, "scope-role", f.roleIds)).join(""),
       scopeHtml = `<details class="panel" id="scopeFilterPanel"><summary>探索範囲を最初から決めておく（任意）</summary><p class="note">最初から範囲をある程度決めたい人向けの設定です。選んだ業界・仕事の種類に合う候補だけを比較対象にします。未選択なら全候補が対象です。やり直したくなったら「最初から」でいつでも広げ直せます。</p><p class="note">※途中の「探索範囲を選ぶ」画面は候補を減らさずに出題の配合を調整しますが、ここでの設定は比較対象そのものを絞ります。</p><p class="note" style="margin:14px 0 6px"><b>業界・業種</b></p><div class="checks">${industryBoxes}</div><p class="note" style="margin:14px 0 6px"><b>探索したい仕事の種類</b></p><div class="checks">${roleBoxes}</div></details>`;
     screen(
-      `<div class="hero"><div class="eyebrow">CAREER PAIRWISE LAB · v1.3.0</div><h1>自分でも気づいていない、<br>働き方の傾向を探ろう。</h1><p class="lead">4択比較や2択トレードオフに答えるだけで、<br>自分の判断軸が見えてくる探索ツールです。<br>結果は正解ではなく、次に調べる仮説として使ってください。</p>${resumeHtml}${scopeHtml}<div class="mode-grid"><div class="mode-card"><span class="time-badge">⏱ 12〜15分</span><h3>標準版</h3><p>まず傾向と可能性マップを見る</p><button class="btn primary" data-mode-start="standard">標準版で始める</button></div><div class="mode-card"><span class="time-badge">⏱ 25〜35分</span><h3>がっつり版</h3><p>迷い・接戦・価値観まで深く見る</p><button class="btn primary" data-mode-start="deep">がっつり版で始める</button></div></div><p class="note">個人情報は入力しません。回答は端末内だけに保存され、外部へ送信されません。</p></div>`
+      `<div class="hero"><div class="eyebrow">CAREER PAIRWISE LAB · v1.4.0</div><h1>自分でも気づいていない、<br>働き方の傾向を探ろう。</h1><p class="lead">4択比較や2択トレードオフに答えるだけで、<br>自分の判断軸が見えてくる探索ツールです。<br>結果は正解ではなく、次に調べる仮説として使ってください。</p>${resumeHtml}${scopeHtml}<div class="mode-grid"><div class="mode-card"><span class="time-badge">⏱ 12〜15分</span><h3>標準版</h3><p>まず傾向と可能性マップを見る</p><button class="btn primary" data-mode-start="standard">標準版で始める</button></div><div class="mode-card"><span class="time-badge">⏱ 25〜35分</span><h3>がっつり版</h3><p>迷い・接戦・価値観まで深く見る</p><button class="btn primary" data-mode-start="deep">がっつり版で始める</button></div></div><p class="note">個人情報は入力しません。回答は端末内だけに保存され、外部へ送信されません。</p></div>`
     );
     root.querySelectorAll("[data-mode-start]").forEach(
       (b) =>
@@ -4369,6 +4455,160 @@
         .join("");
     return `<div class="panel"><h3>上位候補のスコア推移</h3><p class="note">直近${count}件の記録から、現在の上位3候補のスコアの推移を表示しています。</p><svg class="viz" viewBox="0 0 ${w} ${hgt}" role="img" aria-label="上位候補のスコア推移グラフ">${gridLines}${lines}</svg><div class="chips" style="margin-top:8px">${legend}</div></div>`;
   }
+  // ==== 判断軸メタ分析パネル（v1.4.0） ====
+  function renderReasonAxisPanel(r) {
+    let s = r.reason_tag_summary || reasonTagSummary(r);
+    if (s.total < REASON_TAG_MIN_COUNT) return "";
+    let topText = s.top.map((t) => `『${esc(t.label)}』を${t.count}回`).join("、"),
+      unchosenText = s.unchosen.length
+        ? `${s.unchosen.map((l) => `『${esc(l)}』`).join("、")}は一度も選んでいません。`
+        : "すべての軸を少なくとも一度は選んでいます。",
+      hypo = s.top[0]
+        ? `これは、いまのあなたの判断軸が『${esc(s.top[0].label)}』に寄っている可能性を示しています（仮説です）。`
+        : "";
+    return `<div class="panel"><h3>接戦で選んだ判断軸（仮説）</h3><p>接戦の場面で、あなたは${topText}選びました。${unchosenText}</p><p class="note">${hypo}回数が少ないうちは偶然の偏りもあります。参考程度に見てください。</p></div>`;
+  }
+  // ==== 前回との比較パネル（v1.4.0） ====
+  function renderComparisonPanel(r) {
+    let prev = previousRecordOf(r),
+      c = rankComparison(r, prev);
+    if (!c) return "";
+    let rows = c.rows
+        .map((x) => {
+          let sym =
+            x.prevRank === null
+              ? '<em class="move-up">NEW</em>'
+              : x.delta > 0
+                ? `<em class="move-up">↑${x.delta}</em>`
+                : x.delta < 0
+                  ? `<em class="move-down">↓${-x.delta}</em>`
+                  : "<em>→</em>";
+          return `<div class="rank"><b>${x.rank}位 ${esc(x.label)}</b>${sym}</div>`;
+        })
+        .join(""),
+      riserText = c.riser
+        ? `${c.when}前と比べて『${esc(c.riser.label)}』が${c.riser.delta}つ上がりました。興味が動いているのかもしれません。`
+        : `${c.when}前と比べて、上位候補の顔ぶれに大きな変化はありません。`,
+      modeNote = c.sameMode
+        ? ""
+        : '<p class="note">前回と異なるモードの結果のため、順位の変動だけを比較しています（問題数が違うためスコアの直接比較はしません）。</p>';
+    return `<div class="panel"><h3>前回との比較</h3><p>${riserText}</p>${rows}${c.tagChange ? `<p class="note">${esc(c.tagChange)}</p>` : ""}${modeNote}<p class="note">順位は探索用の推定で、回答数によって揺れます。変化も仮説として見てください。</p></div>`;
+  }
+  // ==== 反証モード（v1.4.0）：1位候補への逆質問3問 ====
+  function renderFalsificationEntry(r, insight) {
+    if (!insight.overall.length) return "";
+    if (r.falsification_check) return renderFalsificationRecordPanel(r);
+    return `<div class="panel"><h3>この結果を疑ってみる（2分）</h3><p class="note">1位候補「${esc(insight.overall[0].label)}」について、あえて逆から考える3問です。仮説を鵜呑みにしないための任意ステップです。</p><button class="btn secondary" id="falsify" style="width:100%">この結果を疑ってみる</button></div>`;
+  }
+  function renderFalsificationRecordPanel(r) {
+    let f = r.falsification_check;
+    if (!f) return "";
+    let items = [`<div class="contest">合わないとしたらの仮説：${esc(f.weakness.label)}</div>`];
+    if (f.decisive)
+      items.push(
+        `<div class="contest">「${esc(f.runner_up_label || "2位候補")}」ではなく選ぶ決め手：${esc(f.decisive.label)}</div>`
+      );
+    items.push(
+      `<div class="contest">まだ調べていないこと：${f.unexplored_topics.length ? esc(f.unexplored_topics.join("、")) : "なし"}</div>`
+    );
+    let support =
+      f.weakness.id === "none" || (f.decisive && f.decisive.id === "unexplainable")
+        ? `<p class="note">${esc(FALSIFICATION_SUPPORT_TEXT)}</p>`
+        : "";
+    return `<div class="panel"><h3>反証チェックの記録（1位候補「${esc(f.target_label)}」）</h3>${items.join("")}${support}<p class="note">この記録はAI分析用プロンプトにも反映されています。まだ調べていないことは、次の行動の起点になります。</p></div>`;
+  }
+  function startFalsification(r, insight) {
+    let target = insight.overall[0];
+    if (!target) return;
+    let runnerUp = insight.overall[1] || null,
+      item = careerPool(false).find((x) => x.id === target.id),
+      weaknessOptions = Object.entries((item && item.trait_weights) || {})
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, FALSIFICATION_WEAKNESS_COUNT)
+        .map(([t]) => ({ id: t, label: traitMisfitHints[t] || traitLabels[t] || t }))
+        .concat(FALSIFICATION_GENERIC_WEAKNESSES)
+        .slice(0, FALSIFICATION_WEAKNESS_COUNT),
+      answers = {
+        target_id: target.id,
+        target_label: target.label,
+        runner_up_label: runnerUp ? runnerUp.label : null
+      };
+    falsificationWeakness(r, target, runnerUp, weaknessOptions, answers);
+  }
+  function falsificationWeakness(r, target, runnerUp, options, answers) {
+    progress(1);
+    screen(
+      `<div class="eyebrow">反証チェック · 1 / 3</div><h2>もし「${esc(target.label)}」が合わなかったとしたら、理由はどれに近い？</h2><p class="note">断定するためではなく、確かめるべき点を先に知るための質問です。</p><div class="choice-list">${options.map((o, i) => `<button class="choice" data-weak="${i}"><strong>${esc(o.label)}</strong><span>これが続くことが、実は負担になるかもしれない</span></button>`).join("")}<button class="choice" data-weak="none"><strong>思いつかない</strong><span>合わない理由がすぐには浮かばない</span></button></div><div class="navrow"><button class="link" id="falsifyQuit">やめて結果に戻る</button><span></span></div>`
+    );
+    root.querySelectorAll("[data-weak]").forEach(
+      (b) =>
+        (b.onclick = () => {
+          let v = b.dataset.weak;
+          answers.weakness =
+            v === "none"
+              ? { id: "none", label: "思いつかない" }
+              : { id: options[+v].id, label: options[+v].label };
+          falsificationDecisive(r, target, runnerUp, answers);
+        })
+    );
+    $("#falsifyQuit").onclick = () => showResult(r);
+  }
+  function falsificationDecisive(r, target, runnerUp, answers) {
+    if (!runnerUp) {
+      answers.decisive = null;
+      falsificationUnexplored(r, target, answers);
+      return;
+    }
+    progress(1);
+    let supportNote =
+      answers.weakness.id === "none" ? `<p class="note">${esc(FALSIFICATION_SUPPORT_TEXT)}</p>` : "";
+    screen(
+      `<div class="eyebrow">反証チェック · 2 / 3</div>${supportNote}<h2>「${esc(runnerUp.label)}」ではなく「${esc(target.label)}」を選ぶ決め手は？</h2><p class="note">いちばん近い理由を1つ選んでください。</p><div class="or reason-tags">${REASON_TAGS.map((t) => `<button data-decisive="${t.id}">${esc(t.label)}</button>`).join("")}</div><button class="btn ghost" id="unexplainable" style="width:100%;margin-top:14px">説明できない</button><div class="navrow"><button class="link" id="falsifyQuit">やめて結果に戻る</button><span></span></div>`
+    );
+    root.querySelectorAll("[data-decisive]").forEach(
+      (b) =>
+        (b.onclick = () => {
+          let t = REASON_TAGS.find((x) => x.id === b.dataset.decisive);
+          answers.decisive = { id: t.id, label: t.label };
+          falsificationUnexplored(r, target, answers);
+        })
+    );
+    $("#unexplainable").onclick = () => {
+      answers.decisive = { id: "unexplainable", label: "説明できない" };
+      falsificationUnexplored(r, target, answers);
+    };
+    $("#falsifyQuit").onclick = () => showResult(r);
+  }
+  function falsificationUnexplored(r, target, answers) {
+    progress(1);
+    let supportNote =
+      answers.decisive && answers.decisive.id === "unexplainable"
+        ? `<p class="note">${esc(FALSIFICATION_SUPPORT_TEXT)}</p>`
+        : "";
+    screen(
+      `<div class="eyebrow">反証チェック · 3 / 3</div>${supportNote}<h2>「${esc(target.label)}」について、実はまだ調べていないことは？</h2><p class="lead">該当するものを選んでください（複数可・なしでも進めます）。</p><div class="checks">${FALSIFICATION_UNEXPLORED_TOPICS.map((t) => `<label class="check"><input type="checkbox" value="${t.id}"><span><b>${esc(t.label)}</b></span></label>`).join("")}</div><button class="btn primary" id="falsifyDone">記録して結果に戻る</button><div class="navrow"><button class="link" id="falsifyQuit">やめて結果に戻る</button><span></span></div>`
+    );
+    $("#falsifyDone").onclick = () => {
+      answers.unexplored_topics = [...root.querySelectorAll("input:checked")]
+        .map((x) => FALSIFICATION_UNEXPLORED_TOPICS.find((t) => t.id === x.value)?.label)
+        .filter(Boolean);
+      finishFalsification(r, answers);
+    };
+    $("#falsifyQuit").onclick = () => showResult(r);
+  }
+  function finishFalsification(r, answers) {
+    answers.created_at = new Date().toISOString();
+    r.falsification_check = answers;
+    r.aiPrompt = promptFor(r);
+    let h = history(),
+      idx = h.findIndex((x) => x.id === r.id);
+    if (idx >= 0) {
+      h[idx] = { ...h[idx], falsification_check: answers, aiPrompt: r.aiPrompt };
+      saveHistoryList(h);
+    }
+    toast("反証チェックを記録しました");
+    showResult(r);
+  }
   function showResult(r) {
     progress(1);
     // v0.9の履歴だけは保存済みinsightsをそのまま使い、以降の版は常に最新ロジックで再計算する
@@ -4396,7 +4636,7 @@
         : current.mode === "explore_more"
           ? "これは未探索候補の追加比較を反映した結果です。まだ比較が浅かった候補の位置づけを確かめるための探索です。"
           : "これはがっつり版の探索結果です。より多くの比較とトレードオフをもとに、迷いの構造と次の検証行動を整理しています。";
-    let headHtml = `<div class="result-head"><div class="eyebrow">CAREER EXPLORATORY MAP · v1.3.0 · ${modeLabelOf(current.mode)}</div><h2>これは回答傾向をもとにした探索用の仮説です。</h2><p>${esc(noteText)}</p><div class="actions" style="margin-top:16px"><button class="btn secondary" id="shareResult">結果をコピー</button><button class="btn secondary" id="downloadResult">結果をテキストで保存</button><button class="btn secondary" id="downloadJson">結果をJSONで保存</button></div></div>`;
+    let headHtml = `<div class="result-head"><div class="eyebrow">CAREER EXPLORATORY MAP · v1.4.0 · ${modeLabelOf(current.mode)}</div><h2>これは回答傾向をもとにした探索用の仮説です。</h2><p>${esc(noteText)}</p><div class="actions" style="margin-top:16px"><button class="btn secondary" id="shareResult">結果をコピー</button><button class="btn secondary" id="downloadResult">結果をテキストで保存</button><button class="btn secondary" id="downloadJson">結果をJSONで保存</button></div></div>`;
     let disclaimerHtml = `<div class="panel"><p class="note">スコアは回答傾向をもとにした探索用の推定値です。比較回数が少ない候補は中央寄りに補正しており、追加比較によって順位が変わる可能性があります。</p></div>`;
     let tradeoffPanelHtml = "";
     if (!standard) {
@@ -4423,11 +4663,14 @@
       headHtml +
         disclaimerHtml +
         bars("関心が寄っている可能性", insight.overall, "positive") +
+        renderComparisonPanel(current) +
+        renderFalsificationEntry(current, insight) +
         renderAvoidLeaningPanel(insight) +
         bars("会社員寄り候補", insight.company) +
         bars("個人活動寄り候補", insight.individual) +
         bars("創作・副業候補", insight.creative) +
         renderCloseContestsPanel(insight) +
+        renderReasonAxisPanel(current) +
         renderUnexploredPanel(insight) +
         renderMisfitPanel(insight) +
         renderAvoidFactorsPanel(avoid) +
@@ -4449,6 +4692,8 @@
     $("#hist").onclick = showHistory;
     let exploreBtn = $("#exploreMore");
     if (exploreBtn) exploreBtn.onclick = () => startUnexploredRound(current);
+    let falsifyBtn = $("#falsify");
+    if (falsifyBtn) falsifyBtn.onclick = () => startFalsification(current, insight);
     if (standard && $("#deepContinue"))
       $("#deepContinue").onclick = () => startContinuation(current);
     if (S.answerTrail.length && $("#resultBack"))
@@ -4492,7 +4737,7 @@
       .forEach((x) => x.classList.toggle("active", x.dataset.tab === "history"));
     let h = history();
     screen(
-      `<div class="eyebrow">LOCAL HISTORY</div><h2>過去の比較結果</h2><p class="lead">この端末内に最大${MAX_HISTORY}件保存されます。</p><div class="actions" style="margin:12px 0"><button class="btn secondary" id="importJson">JSONファイルから読み込む</button><input type="file" id="importJsonFile" accept="application/json,.json" hidden></div>${renderScoreTrendChart(h)}${
+      `<div class="eyebrow">LOCAL HISTORY</div><h2>過去の比較結果</h2><p class="lead">この端末内に最大${MAX_HISTORY}件保存されます。</p><div class="actions" style="margin:12px 0"><button class="btn secondary" id="importJson">JSONファイルから読み込む</button><input type="file" id="importJsonFile" accept="application/json,.json" hidden></div>${renderScoreTrendChart(h)}${h.length >= 2 ? renderComparisonPanel(h[0]) : ""}${
         h.length
           ? `<div class="history">${h
               .map((x) => {
@@ -4801,7 +5046,7 @@
       id: String(Date.now()),
       created_at: now,
       updated_at: now,
-      version: "1.3.0",
+      version: "1.4.0",
       mode: S.experienceMode,
       status: completion,
       source_session_id: S.sourceSessionId,
@@ -4842,6 +5087,7 @@
       topTraits: insight.topTraits.slice(0, TOP_N_DISPLAY).map((x) => x.label)
     };
     base.insights = insight;
+    base.reason_tag_summary = reasonTagSummary(base);
     base.aiPrompt = promptFor(base);
     return base;
   }
@@ -4904,8 +5150,17 @@
         .filter((x) => x.confidence < CONFIDENCE_MID)
         .slice(0, TOP_N_DISPLAY)
         .map((x) => x.label)
-        .join("、");
-    return `現在地: ${r.user_status?.label || "不明"}\n希望する・気になるキャリア形態: ${desired}\n業界・業種フィルター: ${industryLabels}\n職種フィルター: ${roleLabels}\n探索の広さ: ${strengthLabel}\nこれらは候補除外ではなく、MaxDiff候補セットの配合を調整する探索設定として使用しています。\nMaxDiff結果: ${maxdiff}\n接戦ペアワイズ結果: ${pairs}\n\nこれは${deep ? "がっつり版" : "標準版"}の探索型キャリア比較ログです。${r.mode === "deep_continuation" ? "標準版の回答を引き継いだ追加分析です。" : ""}スコアは確定値ではなく探索用の推定値です。\n\n回答数: ${r.question_count}\ntrait上位: ${insight.topTraits.map((x) => `${x.label} ${x.score}`).join("、")}\n可能性マップ: ${insight.lean}\n総合候補:\n${fmt(insight.overall)}\n会社員寄り:\n${fmt(insight.company)}\n個人活動寄り:\n${fmt(insight.individual)}\n創作・副業寄り:\n${fmt(insight.creative)}\n接戦・迷い: ${insight.closeContests.join(" / ")}\n信頼度が低い候補: ${low}\n未探索: ${insight.unexplored.map((x) => x.label).join("、")}\n今は距離を感じている候補（仮説）: ${insight.avoidLeaning.map((x) => `${x.label}(Worst${x.worstCount || 0}回)`).join("、") || "該当なし"}\nフィットしにくいかもしれない環境（仮説）: ${insight.misfitEnvironments.map((x) => `${x.hint}（関連傾向:${x.label}）`).join("、")}\n避けたい要素: ${(r.avoidFactors || []).join("、") || "未選択"}\n接戦比較で選んだ理由タグ:\n${reasonTags}\nトレードオフ回答:\n${tradeoffs}\n内省回答:\n${reflection}\n\n値を断定せず、迷いの構造と反証すべき問いを示してください。信頼度の低い候補から追加で比較すべき組み合わせ、話を聞く相手、小さく試す行動を提案してください。距離を感じている候補や環境についても、決めつけずに仮説として深掘りする問いを含めてください。`;
+        .join("、"),
+      axisSummary = r.reason_tag_summary || reasonTagSummary(r),
+      axisText =
+        axisSummary.total >= REASON_TAG_MIN_COUNT
+          ? `繰り返し選んだ軸: ${axisSummary.top.map((t) => `${t.label}${t.count}回`).join("、")} / 一度も選ばなかった軸: ${axisSummary.unchosen.join("、") || "なし"}`
+          : "タグ回答が少ないため未集計",
+      f = r.falsification_check,
+      falsificationText = f
+        ? `1位候補「${f.target_label}」について / 合わないとしたらの仮説: ${f.weakness.label}${f.decisive ? ` / 「${f.runner_up_label || "2位候補"}」ではなく選ぶ決め手: ${f.decisive.label}` : ""} / まだ調べていないこと: ${f.unexplored_topics.length ? f.unexplored_topics.join("、") : "なし"}`
+        : "未実施";
+    return `現在地: ${r.user_status?.label || "不明"}\n希望する・気になるキャリア形態: ${desired}\n業界・業種フィルター: ${industryLabels}\n職種フィルター: ${roleLabels}\n探索の広さ: ${strengthLabel}\nこれらは候補除外ではなく、MaxDiff候補セットの配合を調整する探索設定として使用しています。\nMaxDiff結果: ${maxdiff}\n接戦ペアワイズ結果: ${pairs}\n\nこれは${deep ? "がっつり版" : "標準版"}の探索型キャリア比較ログです。${r.mode === "deep_continuation" ? "標準版の回答を引き継いだ追加分析です。" : ""}スコアは確定値ではなく探索用の推定値です。\n\n回答数: ${r.question_count}\ntrait上位: ${insight.topTraits.map((x) => `${x.label} ${x.score}`).join("、")}\n可能性マップ: ${insight.lean}\n総合候補:\n${fmt(insight.overall)}\n会社員寄り:\n${fmt(insight.company)}\n個人活動寄り:\n${fmt(insight.individual)}\n創作・副業寄り:\n${fmt(insight.creative)}\n接戦・迷い: ${insight.closeContests.join(" / ")}\n信頼度が低い候補: ${low}\n未探索: ${insight.unexplored.map((x) => x.label).join("、")}\n今は距離を感じている候補（仮説）: ${insight.avoidLeaning.map((x) => `${x.label}(Worst${x.worstCount || 0}回)`).join("、") || "該当なし"}\nフィットしにくいかもしれない環境（仮説）: ${insight.misfitEnvironments.map((x) => `${x.hint}（関連傾向:${x.label}）`).join("、")}\n避けたい要素: ${(r.avoidFactors || []).join("、") || "未選択"}\n接戦比較で選んだ理由タグ:\n${reasonTags}\n判断軸メタ分析（理由タグ集計）: ${axisText}\nトレードオフ回答:\n${tradeoffs}\n内省回答:\n${reflection}\n反証チェック: ${falsificationText}\n\n値を断定せず、迷いの構造と反証すべき問いを示してください。信頼度の低い候補から追加で比較すべき組み合わせ、話を聞く相手、小さく試す行動を提案してください。距離を感じている候補や環境についても、決めつけずに仮説として深掘りする問いを含めてください。`;
   }
   function shareText(insight) {
     let top3 = insight.overall
@@ -4938,7 +5193,7 @@
         .map((x, i) => `${i + 1}. ${x.label}（${x.score}点）`)
         .join("\n"),
       prompt = r.aiPrompt || r.ai_prompt || "";
-    return `キャリア比較ラボ 結果メモ（v1.3.0）\n作成日時: ${new Date(r.created_at || Date.now()).toLocaleString("ja-JP")}\n\n■ 候補TOP${TOP_N_DISPLAY}\n${candidates}\n\n■ 傾向TOP${insight.topTraits.length}\n${traits}\n\n■ AIプロンプト\n${prompt}\n`;
+    return `キャリア比較ラボ 結果メモ（v1.4.0）\n作成日時: ${new Date(r.created_at || Date.now()).toLocaleString("ja-JP")}\n\n■ 候補TOP${TOP_N_DISPLAY}\n${candidates}\n\n■ 傾向TOP${insight.topTraits.length}\n${traits}\n\n■ AIプロンプト\n${prompt}\n`;
   }
 
   // ==================================================================
