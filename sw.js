@@ -2,7 +2,7 @@
 // アプリシェルをprecacheし、オフラインでも動作させる。
 // 運用ルール：リリース時は必ず CACHE_VERSION を新しいバージョンに更新すること。
 // （これによりinstallが走り、クライアント側で「新しいバージョンがあります」トーストが出る）
-const CACHE_VERSION = "career-pairwise-lab-v1.6.0";
+const CACHE_VERSION = "career-pairwise-lab-v2.0.0";
 const APP_SHELL = ["./", "./index.html", "./manifest.json", "./icon-192.png", "./icon-512.png"];
 
 self.addEventListener("install", (event) => {
