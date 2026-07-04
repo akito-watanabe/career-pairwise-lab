@@ -4,7 +4,15 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#17261f">
-  <title>キャリア比較ラボ v1.5.0</title>
+  <!-- PWA（v1.6.0）：manifest/sw.jsが無い環境（index.html単体配布）でも全機能が動作する -->
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <link rel="icon" type="image/png" href="icon-192.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="キャリア比較">
+  <title>キャリア比較ラボ v1.6.0</title>
   <style>
   /* ==== ベース：カラーパレット・リセット ==== */
   :root {
@@ -1176,6 +1184,12 @@
   .or.reason-tags {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
+  }
+
+  /* v1.6 更新通知トースト（タップ可能） */
+  .toast.toast-action {
+    cursor: pointer;
+    pointer-events: auto;
   }
 
   /* v1.5 展開式の確認ガイド・行動ガイド */
@@ -2609,6 +2623,11 @@
     lonely_work: { check: "同業の知り合いや相談できるコミュニティの当てがあるか", ask: "迷ったとき、誰に相談していますか？" }
   };
   const ACTION_GUIDE_TOP_COUNT = 3; // 行動ガイドを表示する上位候補数
+  // ==== 相談先リンク（v1.6.0）====
+  // 運営者が自分の相談窓口（Matcher等）を差し込むための設定。初期値は空配列で、
+  // リンクがある場合のみ結果画面の「もっと深く整理したい人へ」に表示される。
+  // 構造: { label: "表示名", url: "https://...", description: "一言説明（任意）" }
+  const CONSULT_LINKS = [];
   // ==== 探索範囲フィルター用タグ付け（v1.2.0で候補ごとの個別タグに刷新）====
   // JOB_TAGS / SOLO_TAGS で全候補に業界タグ（i）・仕事の種類タグ（r）を個別付与する。
   // カテゴリ由来のマッピングは、タグ未定義の候補を将来追加した場合のフォールバックとして残す。
@@ -4131,7 +4150,7 @@
       roleBoxes = ROLE_FILTERS.map((x) => box(x, "scope-role", f.roleIds)).join(""),
       scopeHtml = `<details class="panel" id="scopeFilterPanel"><summary>探索範囲を最初から決めておく（任意）</summary><p class="note">最初から範囲をある程度決めたい人向けの設定です。選んだ業界・仕事の種類に合う候補だけを比較対象にします。未選択なら全候補が対象です。やり直したくなったら「最初から」でいつでも広げ直せます。</p><p class="note">※途中の「探索範囲を選ぶ」画面は候補を減らさずに出題の配合を調整しますが、ここでの設定は比較対象そのものを絞ります。</p><p class="note" style="margin:14px 0 6px"><b>業界・業種</b></p><div class="checks">${industryBoxes}</div><p class="note" style="margin:14px 0 6px"><b>探索したい仕事の種類</b></p><div class="checks">${roleBoxes}</div></details>`;
     screen(
-      `<div class="hero"><div class="eyebrow">CAREER PAIRWISE LAB · v1.5.0</div><h1>自分でも気づいていない、<br>働き方の傾向を探ろう。</h1><p class="lead">4択比較や2択トレードオフに答えるだけで、<br>自分の判断軸が見えてくる探索ツールです。<br>結果は正解ではなく、次に調べる仮説として使ってください。</p>${resumeHtml}${scopeHtml}<div class="mode-grid"><div class="mode-card"><span class="time-badge">⏱ 12〜15分</span><h3>標準版</h3><p>まず傾向と可能性マップを見る</p><button class="btn primary" data-mode-start="standard">標準版で始める</button></div><div class="mode-card"><span class="time-badge">⏱ 25〜35分</span><h3>がっつり版</h3><p>迷い・接戦・価値観まで深く見る</p><button class="btn primary" data-mode-start="deep">がっつり版で始める</button></div></div><p class="note">個人情報は入力しません。回答は端末内だけに保存され、外部へ送信されません。</p></div>`
+      `<div class="hero"><div class="eyebrow">CAREER PAIRWISE LAB · v1.6.0</div><h1>自分でも気づいていない、<br>働き方の傾向を探ろう。</h1><p class="lead">4択比較や2択トレードオフに答えるだけで、<br>自分の判断軸が見えてくる探索ツールです。<br>結果は正解ではなく、次に調べる仮説として使ってください。</p>${resumeHtml}${scopeHtml}<div class="mode-grid"><div class="mode-card"><span class="time-badge">⏱ 12〜15分</span><h3>標準版</h3><p>まず傾向と可能性マップを見る</p><button class="btn primary" data-mode-start="standard">標準版で始める</button></div><div class="mode-card"><span class="time-badge">⏱ 25〜35分</span><h3>がっつり版</h3><p>迷い・接戦・価値観まで深く見る</p><button class="btn primary" data-mode-start="deep">がっつり版で始める</button></div></div><p class="note">個人情報は入力しません。回答は端末内だけに保存され、外部へ送信されません。</p></div>`
     );
     root.querySelectorAll("[data-mode-start]").forEach(
       (b) =>
@@ -4598,6 +4617,16 @@
       )
       .join("")}</div>`;
   }
+  // 相談導線パネル（v1.6.0）：結果画面の最下部
+  function renderConsultPanel() {
+    let links = CONSULT_LINKS.filter((x) => x && x.label && x.url)
+      .map(
+        (x) =>
+          `<a class="btn secondary" style="display:block;text-align:center;text-decoration:none;margin-top:10px" href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.label)}</a>${x.description ? `<p class="note">${esc(x.description)}</p>` : ""}`
+      )
+      .join("");
+    return `<div class="panel"><h3>もっと深く整理したい人へ</h3><p class="note">この結果を持って人に相談すると、整理が一気に進みます。信頼できる先輩・キャリアの相談相手に、エクスポートしたJSONやAI分析結果を見せてみてください。</p>${links}</div>`;
+  }
   // 求人票照合パネル（v1.5.0）
   function renderJobPostingPanel() {
     return `<div class="panel"><h3>求人票と照らし合わせる</h3><p class="note">気になる求人票と診断結果を、AIで照合できます。<br>①下のボタンでプロンプトをコピー ②ClaudeやChatGPTに貼る ③続けて気になる求人票を貼る</p><button class="btn secondary" id="jobPostingCopy" style="width:100%">照合用プロンプトをコピー</button><p class="note" style="margin-top:10px">求人票の本文はこのアプリでは扱いません。AIチャット側に貼ってください。</p></div>`;
@@ -4847,7 +4876,7 @@
         : current.mode === "explore_more"
           ? "これは未探索候補の追加比較を反映した結果です。まだ比較が浅かった候補の位置づけを確かめるための探索です。"
           : "これはがっつり版の探索結果です。より多くの比較とトレードオフをもとに、迷いの構造と次の検証行動を整理しています。";
-    let headHtml = `<div class="result-head"><div class="eyebrow">CAREER EXPLORATORY MAP · v1.5.0 · ${modeLabelOf(current.mode)}</div><h2>これは回答傾向をもとにした探索用の仮説です。</h2><p>${esc(noteText)}</p><div class="actions" style="margin-top:16px"><button class="btn secondary" id="shareResult">結果をコピー</button><button class="btn secondary" id="downloadResult">結果をテキストで保存</button><button class="btn secondary" id="downloadJson">結果をJSONで保存</button></div></div>`;
+    let headHtml = `<div class="result-head"><div class="eyebrow">CAREER EXPLORATORY MAP · v1.6.0 · ${modeLabelOf(current.mode)}</div><h2>これは回答傾向をもとにした探索用の仮説です。</h2><p>${esc(noteText)}</p><div class="actions" style="margin-top:16px"><button class="btn secondary" id="shareResult">結果をコピー</button><button class="btn secondary" id="downloadResult">結果をテキストで保存</button><button class="btn secondary" id="downloadJson">結果をJSONで保存</button></div></div>`;
     let disclaimerHtml = `<div class="panel"><p class="note">スコアは回答傾向をもとにした探索用の推定値です。比較回数が少ない候補は中央寄りに補正しており、追加比較によって順位が変わる可能性があります。</p></div>`;
     let tradeoffPanelHtml = "";
     if (!standard) {
@@ -4898,7 +4927,8 @@
         resultBackHtml +
         reflectionHtml +
         `<div class="actions"><button class="btn ghost" id="reset">もう一度やる</button><button class="btn primary" id="hist">履歴を見る</button></div>` +
-        coachHtml
+        coachHtml +
+        renderConsultPanel()
     );
     $("#copy").onclick = () => copy(prompt);
     $("#reset").onclick = reset;
@@ -5260,7 +5290,7 @@
       id: String(Date.now()),
       created_at: now,
       updated_at: now,
-      version: "1.5.0",
+      version: "1.6.0",
       mode: S.experienceMode,
       status: completion,
       source_session_id: S.sourceSessionId,
@@ -5436,7 +5466,7 @@
         .map((x, i) => `${i + 1}. ${x.label}（${x.score}点）`)
         .join("\n"),
       prompt = r.aiPrompt || r.ai_prompt || "";
-    return `キャリア比較ラボ 結果メモ（v1.5.0）\n作成日時: ${new Date(r.created_at || Date.now()).toLocaleString("ja-JP")}\n\n■ 候補TOP${TOP_N_DISPLAY}\n${candidates}\n\n■ 傾向TOP${insight.topTraits.length}\n${traits}\n\n■ AIプロンプト\n${prompt}\n`;
+    return `キャリア比較ラボ 結果メモ（v1.6.0）\n作成日時: ${new Date(r.created_at || Date.now()).toLocaleString("ja-JP")}\n\n■ 候補TOP${TOP_N_DISPLAY}\n${candidates}\n\n■ 傾向TOP${insight.topTraits.length}\n${traits}\n\n■ AIプロンプト\n${prompt}\n`;
   }
 
   // ==================================================================
@@ -5446,5 +5476,47 @@
     .querySelectorAll(".tab")
     .forEach((t) => (t.onclick = () => (t.dataset.tab === "history" ? showHistory() : reset())));
   home();
+  // PWA（v1.6.0）：Service Worker登録。プログレッシブエンハンスメントとして実装しており、
+  // file://での直開き・sw.jsが無い単体配布・未対応ブラウザでは何もせず全機能がそのまま動く。
+  function showUpdateToast(reg) {
+    let t = $("#toast");
+    if (!t) return;
+    t.textContent = "新しいバージョンがあります（タップで更新）";
+    t.classList.add("show", "toast-action");
+    t.onclick = () => {
+      if (reg.waiting) reg.waiting.postMessage("SKIP_WAITING");
+      t.classList.remove("show", "toast-action");
+      t.onclick = null;
+    };
+  }
+  if (
+    typeof navigator !== "undefined" &&
+    "serviceWorker" in navigator &&
+    typeof location !== "undefined" &&
+    location.protocol.indexOf("http") === 0
+  ) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker
+        .register("sw.js")
+        .then((reg) => {
+          if (reg.waiting && navigator.serviceWorker.controller) showUpdateToast(reg);
+          reg.addEventListener("updatefound", () => {
+            let sw = reg.installing;
+            if (!sw) return;
+            sw.addEventListener("statechange", () => {
+              if (sw.state === "installed" && navigator.serviceWorker.controller)
+                showUpdateToast(reg);
+            });
+          });
+        })
+        .catch(() => {});
+      let refreshed = false;
+      navigator.serviceWorker.addEventListener("controllerchange", () => {
+        if (refreshed) return;
+        refreshed = true;
+        location.reload();
+      });
+    });
+  }
 })();
 </script></body></html>
