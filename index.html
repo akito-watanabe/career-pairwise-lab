@@ -15,7 +15,7 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="キャリア比較">
-  <title>キャリア比較ラボ v2.0.2</title>
+  <title>キャリア比較ラボ v2.0.3</title>
   <style>
   /* ==== ベース：カラーパレット・リセット ==== */
   :root {
@@ -1313,13 +1313,132 @@
     letter-spacing: 0.02em;
   }
   /* 1位候補：32px明朝（結果画面の主役） */
-  .panel-positive .rank-wrap:first-child .bar-row b {
+  .panel-positive .rank-wrap:first-of-type .bar-row b {
     font-size: 32px;
     font-weight: 700;
     line-height: 1.3;
   }
-  .panel-positive .rank-wrap:first-child .bar-row {
+  .panel-positive .rank-wrap:first-of-type .bar-row {
     flex-wrap: wrap;
+  }
+
+  /* ==== 航路モチーフ（v2.0.3）：実線=確定、点線=まだ航海中 ==== */
+  /* 進捗＝点線の航路＋現在地の円（⊙） */
+  .progress {
+    height: 12px;
+    background: transparent;
+    overflow: visible;
+    position: relative;
+    border-radius: 0;
+  }
+  .progress::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 5px;
+    border-top: 2px dashed var(--line);
+  }
+  .progress i {
+    display: block;
+    position: absolute;
+    left: 0;
+    top: 5px;
+    height: 0;
+    border-top: 2px solid var(--course);
+    background: none;
+    max-width: calc(100% - 10px);
+  }
+  .progress i::after {
+    content: "";
+    position: absolute;
+    right: -10px;
+    top: -6px;
+    width: 6px;
+    height: 6px;
+    border: 2px solid var(--course);
+    border-radius: 50%;
+    background: var(--paper);
+  }
+  /* スコアバー＝点線航路＋到達点の円 */
+  .bar-track {
+    height: 12px;
+    background: transparent;
+    overflow: visible;
+    position: relative;
+    border-radius: 0;
+  }
+  .bar-track::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 5px;
+    border-top: 2px dashed var(--line);
+  }
+  .bar-fill {
+    position: absolute;
+    left: 0;
+    top: 5px;
+    height: 0;
+    border-top: 2px solid var(--course);
+    background: none;
+    max-width: calc(100% - 10px);
+  }
+  .bar-fill::after {
+    content: "";
+    position: absolute;
+    right: -10px;
+    top: -6px;
+    width: 6px;
+    height: 6px;
+    border: 2px solid var(--course);
+    border-radius: 50%;
+    background: var(--paper-raised);
+  }
+  /* 手描きの痕跡は3箇所だけ */
+  /* (1) 1位候補の波下線 */
+  .panel-positive .rank-wrap:first-of-type .bar-row b {
+    padding-bottom: 8px;
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='6' viewBox='0 0 60 6'%3E%3Cpath d='M0 3.2 Q 7 0.6 15 2.8 T 29 3.4 T 44 2.6 T 60 3.1' fill='none' stroke='%23C4553B' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E") bottom left repeat-x;
+    background-size: 60px 6px;
+  }
+  /* (2) 接戦見出しをわずかに傾ける */
+  .panel-contest h3 {
+    display: inline-block;
+    transform: rotate(-1.5deg);
+    transform-origin: left center;
+  }
+  /* (3) セクション区切りの短い手描き線 */
+  .panel > h3:first-child::after {
+    content: "";
+    display: block;
+    width: 46px;
+    height: 5px;
+    margin-top: 7px;
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='46' height='5' viewBox='0 0 46 5'%3E%3Cpath d='M1 3.2 C 8 1.4 15 4.2 23 2.8 S 38 1.8 45 3' fill='none' stroke='%231E3A50' stroke-opacity='0.4' stroke-width='1.2' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat;
+  }
+  .panel-contest h3::after {
+    display: none;
+  }
+  /* 海図（可能性マップ）専用の目盛りと方位記号 */
+  .viz .chart-grid {
+    stroke: rgba(30, 58, 80, 0.07);
+  }
+  .viz .compass-mark line {
+    stroke: var(--ink-faint);
+    stroke-width: 1.2;
+  }
+  .viz .compass-mark path {
+    fill: var(--ink-faint);
+  }
+  .viz .compass-mark text {
+    fill: var(--ink-faint);
+    font-family: var(--font-display);
+    font-size: 11px;
+  }
+  .viz text {
+    font-family: var(--font-display);
   }
 </style>
 </head>
@@ -5101,7 +5220,7 @@
       roleBoxes = ROLE_FILTERS.map((x) => box(x, "scope-role", f.roleIds)).join(""),
       scopeHtml = `<details class="panel" id="scopeFilterPanel"><summary>探索範囲を最初から決めておく（任意）</summary><p class="note">最初から範囲をある程度決めたい人向けの設定です。選んだ業界・仕事の種類に合う候補だけを比較対象にします。未選択なら全候補が対象です。やり直したくなったら「最初から」でいつでも広げ直せます。</p><p class="note">※途中の「探索範囲を選ぶ」画面は候補を減らさずに出題の配合を調整しますが、ここでの設定は比較対象そのものを絞ります。</p><p class="note" style="margin:14px 0 6px"><b>業界・業種</b></p><div class="checks">${industryBoxes}</div><p class="note" style="margin:14px 0 6px"><b>探索したい仕事の種類</b></p><div class="checks">${roleBoxes}</div></details>`;
     screen(
-      `<div class="hero"><div class="eyebrow">CAREER PAIRWISE LAB · v2.0.2</div><h1>自分でも気づいていない、<br>働き方の傾向を探ろう。</h1><p class="lead">4択比較や2択トレードオフに答えるだけで、<br>自分の判断軸が見えてくる探索ツールです。<br>結果は正解ではなく、次に調べる仮説として使ってください。</p>${resumeHtml}${scopeHtml}<div class="mode-grid"><div class="mode-card"><span class="time-badge">⏱ 12〜15分</span><h3>標準版</h3><p>まず傾向と可能性マップを見る</p><button class="btn primary" data-mode-start="standard">標準版で始める</button></div><div class="mode-card"><span class="time-badge">⏱ 25〜35分</span><h3>がっつり版</h3><p>迷い・接戦・価値観まで深く見る</p><button class="btn primary" data-mode-start="deep">がっつり版で始める</button></div></div><p class="note">個人情報は入力しません。回答は端末内だけに保存され、外部へ送信されません。</p></div>`
+      `<div class="hero"><div class="eyebrow">CAREER PAIRWISE LAB · v2.0.3</div><h1>自分でも気づいていない、<br>働き方の傾向を探ろう。</h1><p class="lead">4択比較や2択トレードオフに答えるだけで、<br>自分の判断軸が見えてくる探索ツールです。<br>結果は正解ではなく、次に調べる仮説として使ってください。</p>${resumeHtml}${scopeHtml}<div class="mode-grid"><div class="mode-card"><span class="time-badge">⏱ 12〜15分</span><h3>標準版</h3><p>まず傾向と可能性マップを見る</p><button class="btn primary" data-mode-start="standard">標準版で始める</button></div><div class="mode-card"><span class="time-badge">⏱ 25〜35分</span><h3>がっつり版</h3><p>迷い・接戦・価値観まで深く見る</p><button class="btn primary" data-mode-start="deep">がっつり版で始める</button></div></div><p class="note">個人情報は入力しません。回答は端末内だけに保存され、外部へ送信されません。</p></div>`
     );
     root.querySelectorAll("[data-mode-start]").forEach(
       (b) =>
@@ -5493,7 +5612,13 @@
       .join("")}</svg>`;
   }
   function renderPossibilityMap(points) {
-    return `<svg class="viz" viewBox="0 0 340 330" role="img" aria-label="組織所属と個人自律、安定運用と創作挑戦の可能性マップ"><line class="axis" x1="35" y1="160" x2="305" y2="160"/><line class="axis" x1="170" y1="25" x2="170" y2="295"/><text x="8" y="155">組織所属</text><text x="278" y="155">個人自律</text><text x="170" y="16" text-anchor="middle">創作・挑戦</text><text x="170" y="315" text-anchor="middle">安定運用</text>${points
+    let grid = "";
+    for (let gx = 35; gx <= 305; gx += 45)
+      grid += `<line class="chart-grid" x1="${gx}" y1="25" x2="${gx}" y2="295"/>`;
+    for (let gy = 25; gy <= 295; gy += 45)
+      grid += `<line class="chart-grid" x1="35" y1="${gy}" x2="305" y2="${gy}"/>`;
+    let compassMark = `<g class="compass-mark"><line x1="292" y1="56" x2="292" y2="40"/><path d="M292 34 l-4.5 9 9 0 z"/><text x="292" y="68" text-anchor="middle">N</text></g>`;
+    return `<svg class="viz" viewBox="0 0 340 330" role="img" aria-label="組織所属と個人自律、安定運用と創作挑戦の可能性マップ">${grid}${compassMark}<line class="axis" x1="35" y1="160" x2="305" y2="160"/><line class="axis" x1="170" y1="25" x2="170" y2="295"/><text x="8" y="155">組織所属</text><text x="278" y="155">個人自律</text><text x="170" y="16" text-anchor="middle">創作・挑戦</text><text x="170" y="315" text-anchor="middle">安定運用</text>${points
       .map((p, i) => {
         let x = 170 + p.x * 115,
           y = 160 - p.y * 115,
@@ -5525,7 +5650,7 @@
       : "";
   }
   function renderCloseContestsPanel(insight) {
-    return `<div class="panel"><h3>迷い・接戦ポイント</h3>${insight.closeContests.map((x) => `<div class="contest">${esc(x)}</div>`).join("")}</div>`;
+    return `<div class="panel panel-contest"><h3>迷い・接戦ポイント</h3>${insight.closeContests.map((x) => `<div class="contest">${esc(x)}</div>`).join("")}</div>`;
   }
   function renderUnexploredPanel(insight) {
     return `<div class="panel"><h3>未探索候補</h3><p class="note">まだ十分に比べていませんが、trait相性から追加で見る価値がありそうです。</p>${insight.unexplored.map((x) => `<div class="rank"><b class="cand-link" data-sheet="${esc(x.id)}">${esc(x.label)}</b><em>未探索</em></div>`).join("")}${insight.unexplored.length ? `<button class="btn secondary" id="exploreMore" style="width:100%;margin-top:12px">未探索候補をあと5問比べる</button>` : ""}</div>`;
@@ -5854,7 +5979,7 @@
         : current.mode === "explore_more"
           ? "これは未探索候補の追加比較を反映した結果です。まだ比較が浅かった候補の位置づけを確かめるための探索です。"
           : "これはがっつり版の探索結果です。より多くの比較とトレードオフをもとに、迷いの構造と次の検証行動を整理しています。";
-    let headHtml = `<div class="result-head"><div class="eyebrow">CAREER EXPLORATORY MAP · v2.0.2 · ${modeLabelOf(current.mode)}</div><h2>これは回答傾向をもとにした探索用の仮説です。</h2><p>${esc(noteText)}</p><div class="actions" style="margin-top:16px"><button class="btn secondary" id="shareResult">結果をコピー</button><button class="btn secondary" id="downloadResult">結果をテキストで保存</button><button class="btn secondary" id="downloadJson">結果をJSONで保存</button></div></div>`;
+    let headHtml = `<div class="result-head"><div class="eyebrow">CAREER EXPLORATORY MAP · v2.0.3 · ${modeLabelOf(current.mode)}</div><h2>これは回答傾向をもとにした探索用の仮説です。</h2><p>${esc(noteText)}</p><div class="actions" style="margin-top:16px"><button class="btn secondary" id="shareResult">結果をコピー</button><button class="btn secondary" id="downloadResult">結果をテキストで保存</button><button class="btn secondary" id="downloadJson">結果をJSONで保存</button></div></div>`;
     let disclaimerHtml = `<div class="panel"><p class="note">スコアは回答傾向をもとにした探索用の推定値です。比較回数が少ない候補は中央寄りに補正しており、追加比較によって順位が変わる可能性があります。候補名をタップすると、仕事の一日・入り方・収入目安などの詳細が開きます。</p></div>`;
     let tradeoffPanelHtml = "";
     if (!standard) {
@@ -6271,7 +6396,7 @@
       id: String(Date.now()),
       created_at: now,
       updated_at: now,
-      version: "2.0.2",
+      version: "2.0.3",
       mode: S.experienceMode,
       status: completion,
       source_session_id: S.sourceSessionId,
@@ -6447,7 +6572,7 @@
         .map((x, i) => `${i + 1}. ${x.label}（${x.score}点）`)
         .join("\n"),
       prompt = r.aiPrompt || r.ai_prompt || "";
-    return `キャリア比較ラボ 結果メモ（v2.0.2）\n作成日時: ${new Date(r.created_at || Date.now()).toLocaleString("ja-JP")}\n\n■ 候補TOP${TOP_N_DISPLAY}\n${candidates}\n\n■ 傾向TOP${insight.topTraits.length}\n${traits}\n\n■ AIプロンプト\n${prompt}\n`;
+    return `キャリア比較ラボ 結果メモ（v2.0.3）\n作成日時: ${new Date(r.created_at || Date.now()).toLocaleString("ja-JP")}\n\n■ 候補TOP${TOP_N_DISPLAY}\n${candidates}\n\n■ 傾向TOP${insight.topTraits.length}\n${traits}\n\n■ AIプロンプト\n${prompt}\n`;
   }
 
   // ==================================================================
