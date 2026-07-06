@@ -15,7 +15,7 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="キャリア比較">
-  <title>キャリア比較ラボ v2.0.3</title>
+  <title>キャリア比較ラボ v2.1.0</title>
   <style>
   /* ==== ベース：カラーパレット・リセット ==== */
   :root {
@@ -5220,7 +5220,7 @@
       roleBoxes = ROLE_FILTERS.map((x) => box(x, "scope-role", f.roleIds)).join(""),
       scopeHtml = `<details class="panel" id="scopeFilterPanel"><summary>探索範囲を最初から決めておく（任意）</summary><p class="note">最初から範囲をある程度決めたい人向けの設定です。選んだ業界・仕事の種類に合う候補だけを比較対象にします。未選択なら全候補が対象です。やり直したくなったら「最初から」でいつでも広げ直せます。</p><p class="note">※途中の「探索範囲を選ぶ」画面は候補を減らさずに出題の配合を調整しますが、ここでの設定は比較対象そのものを絞ります。</p><p class="note" style="margin:14px 0 6px"><b>業界・業種</b></p><div class="checks">${industryBoxes}</div><p class="note" style="margin:14px 0 6px"><b>探索したい仕事の種類</b></p><div class="checks">${roleBoxes}</div></details>`;
     screen(
-      `<div class="hero"><div class="eyebrow">CAREER PAIRWISE LAB · v2.0.3</div><h1>自分でも気づいていない、<br>働き方の傾向を探ろう。</h1><p class="lead">4択比較や2択トレードオフに答えるだけで、<br>自分の判断軸が見えてくる探索ツールです。<br>結果は正解ではなく、次に調べる仮説として使ってください。</p>${resumeHtml}${scopeHtml}<div class="mode-grid"><div class="mode-card"><span class="time-badge">⏱ 12〜15分</span><h3>標準版</h3><p>まず傾向と可能性マップを見る</p><button class="btn primary" data-mode-start="standard">標準版で始める</button></div><div class="mode-card"><span class="time-badge">⏱ 25〜35分</span><h3>がっつり版</h3><p>迷い・接戦・価値観まで深く見る</p><button class="btn primary" data-mode-start="deep">がっつり版で始める</button></div></div><p class="note">個人情報は入力しません。回答は端末内だけに保存され、外部へ送信されません。</p></div>`
+      `<div class="hero"><div class="eyebrow">CAREER PAIRWISE LAB · v2.1.0</div><h1>自分でも気づいていない、<br>働き方の傾向を探ろう。</h1><p class="lead">あなたのキャリアの海図を、自分の手で描くための探索ツールです。<br>4択比較に答えるだけで、自分の判断軸が見えてきます。<br>結果は正解ではなく、次に調べる仮説として使ってください。</p>${resumeHtml}${scopeHtml}<div class="mode-grid"><div class="mode-card"><span class="time-badge">12〜15分</span><h3>標準版</h3><p>まず傾向と可能性マップを見る</p><button class="btn primary" data-mode-start="standard">標準版で出航する</button></div><div class="mode-card"><span class="time-badge">25〜35分</span><h3>がっつり版</h3><p>迷い・接戦・価値観まで深く見る</p><button class="btn primary" data-mode-start="deep">がっつり版で出航する</button></div></div><p class="note">個人情報は入力しません。回答は端末内だけに保存され、外部へ送信されません。</p></div>`
     );
     root.querySelectorAll("[data-mode-start]").forEach(
       (b) =>
@@ -5412,7 +5412,7 @@
       prefix = continuation ? "がっつり版：追加分析" : cfg.label,
       progressBarHtml = ["pairwise", "closePairwise"].includes(S.phase) ? phaseProgressBar() : "";
     screen(
-      `<div class="eyebrow">${prefix}<br>${continuation ? "追加回答" : "回答"} ${S.questionCount + 1} / 約${cfg.maxAnswers}<br>現在：${names[S.phase]}</div>${progressBarHtml}<h2>${kind === "tradeoff" ? "より受け入れたい働き方は？" : "今、より惹かれるのは？"}</h2><p class="note">${intent}</p><div class="pair"><button class="pair-card trade-card" data-answer="a"><b>${a.label}</b><span>${a.description}</span></button><button class="pair-card trade-card" data-answer="b"><b>${b.label}</b><span>${b.description}</span></button></div><div class="or"><button data-answer="both">どちらもあり</button><button data-answer="neither">どちらも微妙</button><button data-answer="unknown">わからない</button></div><button class="btn ghost" id="early" style="width:100%;margin-top:12px">途中結果を見る</button><div class="navrow"><button class="link" id="back">← 戻る</button><button class="link" id="reset">最初から</button></div>`
+      `<div class="eyebrow">${prefix}<br>${continuation ? "追加回答" : "回答"} ${S.questionCount + 1} / 約${cfg.maxAnswers}<br>現在：${names[S.phase]}</div>${progressBarHtml}<h2>${kind === "tradeoff" ? "より受け入れたい働き方は？" : "今、より惹かれるのは？"}</h2><p class="note">${intent}</p><div class="pair"><button class="pair-card trade-card" data-answer="a"><b>${a.label}</b><span>${a.description}</span></button><button class="pair-card trade-card" data-answer="b"><b>${b.label}</b><span>${b.description}</span></button></div><div class="or"><button data-answer="both">どちらもあり</button><button data-answer="neither">どちらも微妙</button><button data-answer="unknown">わからない</button></div><button class="btn ghost" id="early" style="width:100%;margin-top:12px">現在地を見る</button><div class="navrow"><button class="link" id="back">← 戻る</button><button class="link" id="reset">最初から</button></div>`
     );
     root.querySelectorAll("[data-answer]").forEach(
       (x) =>
@@ -5484,7 +5484,7 @@
     function render() {
       progress();
       screen(
-        `<div class="eyebrow">${activeConfig().label} · ${names[S.phase]} ${S.index + 1} / ${S.queue.length}</div>${phaseProgressBar()}<h2>4つの中から選んでください</h2><p class="lead">4つの中から、今いちばん気になるものと、今はいちばん違うと感じるものを選んでください。<br>選んだ後でも、次へ進む前なら変更できます。</p><div class="md-status"><span class="md-status-item"></span><span class="md-status-item"></span></div><div class="maxdiff-grid">${set.map((x) => `<div class="maxdiff-item" data-id="${x.id}"><b>${x.label}</b><span class="candidate-desc">${x.desc || x.description}</span><div class="md-actions"><button class="md-btn best" data-role="best" data-id="${x.id}">一番気になる ★</button><button class="md-btn worst" data-role="worst" data-id="${x.id}">今は違う ✕</button></div></div>`).join("")}</div><p class="note md-warning"></p><div class="md-sticky"><button class="btn primary" id="mdDone">次へ</button><div class="navrow"><button class="link" id="back">← 戻る</button><button class="link" id="mdEarly">途中結果を見る</button></div></div>`
+        `<div class="eyebrow">${activeConfig().label} · ${names[S.phase]} ${S.index + 1} / ${S.queue.length}</div>${phaseProgressBar()}<h2>4つの中から選んでください</h2><p class="lead">4つの中から、今いちばん気になるものと、今はいちばん違うと感じるものを選んでください。<br>選んだ後でも、次へ進む前なら変更できます。</p><div class="md-status"><span class="md-status-item"></span><span class="md-status-item"></span></div><div class="maxdiff-grid">${set.map((x) => `<div class="maxdiff-item" data-id="${x.id}"><b>${x.label}</b><span class="candidate-desc">${x.desc || x.description}</span><div class="md-actions"><button class="md-btn best" data-role="best" data-id="${x.id}">一番気になる ★</button><button class="md-btn worst" data-role="worst" data-id="${x.id}">今は違う ✕</button></div></div>`).join("")}</div><p class="note md-warning"></p><div class="md-sticky"><button class="btn primary" id="mdDone">進む</button><div class="navrow"><button class="link" id="back">← 戻る</button><button class="link" id="mdEarly">現在地を見る</button></div></div>`
       );
       root.querySelectorAll("[data-role]").forEach(
         (b) =>
@@ -5567,7 +5567,7 @@
       edit = S.editingAnswer?.type === "reflection" ? S.editingAnswer.payload : null;
     progress();
     screen(
-      `<div class="eyebrow">${activeConfig().label} · 内省 ${S.index + 1} / ${REFLECTION_QUESTIONS.length}</div><h2>${q.text}</h2><p class="note">任意回答です。個人情報は入力しないでください。</p><textarea class="reflection" id="reflectionText" maxlength="${REFLECTION_MAX_LENGTH}" placeholder="一言でも、空欄でも構いません">${esc(edit?.answer || "")}</textarea><button class="btn primary" id="reflectionNext">${S.index === REFLECTION_QUESTIONS.length - 1 ? "結果へ" : "次へ"}</button><button class="btn ghost" id="back" style="width:100%;margin-top:10px">戻る</button>`
+      `<div class="eyebrow">${activeConfig().label} · 内省 ${S.index + 1} / ${REFLECTION_QUESTIONS.length}</div><h2>${q.text}</h2><p class="note">任意回答です。個人情報は入力しないでください。</p><textarea class="reflection" id="reflectionText" maxlength="${REFLECTION_MAX_LENGTH}" placeholder="一言でも、空欄でも構いません">${esc(edit?.answer || "")}</textarea><button class="btn primary" id="reflectionNext">${S.index === REFLECTION_QUESTIONS.length - 1 ? "結果へ" : "進む"}</button><button class="btn ghost" id="back" style="width:100%;margin-top:10px">戻る</button>`
     );
     $("#reflectionNext").onclick = () => {
       let log = { id: q.id, text: q.text, answer: $("#reflectionText").value.trim() };
@@ -5653,7 +5653,7 @@
     return `<div class="panel panel-contest"><h3>迷い・接戦ポイント</h3>${insight.closeContests.map((x) => `<div class="contest">${esc(x)}</div>`).join("")}</div>`;
   }
   function renderUnexploredPanel(insight) {
-    return `<div class="panel"><h3>未探索候補</h3><p class="note">まだ十分に比べていませんが、trait相性から追加で見る価値がありそうです。</p>${insight.unexplored.map((x) => `<div class="rank"><b class="cand-link" data-sheet="${esc(x.id)}">${esc(x.label)}</b><em>未探索</em></div>`).join("")}${insight.unexplored.length ? `<button class="btn secondary" id="exploreMore" style="width:100%;margin-top:12px">未探索候補をあと5問比べる</button>` : ""}</div>`;
+    return `<div class="panel"><h3>まだ見ぬ海域（未探索候補）</h3><p class="note">まだ十分に比べていませんが、trait相性から追加で見る価値がありそうです。</p>${insight.unexplored.map((x) => `<div class="rank"><b class="cand-link" data-sheet="${esc(x.id)}">${esc(x.label)}</b><em>未探索</em></div>`).join("")}${insight.unexplored.length ? `<button class="btn secondary" id="exploreMore" style="width:100%;margin-top:12px">未探索候補をあと5問比べる</button>` : ""}</div>`;
   }
   function renderMisfitPanel(insight) {
     return insight.misfitEnvironments && insight.misfitEnvironments.length
@@ -5664,7 +5664,7 @@
   function renderAvoidFactorsPanel(r) {
     let labels = r.avoidFactors || r.avoid_factors || [];
     if (!labels.length)
-      return `<div class="panel"><h3>避けたい要素</h3><div class="chips"><span class="note">未選択</span></div></div>`;
+      return `<div class="panel"><h3>浅瀬の記録（避けたい要素）</h3><div class="chips"><span class="note">未選択</span></div></div>`;
     let branch = branchOf(r),
       list = branch === "company" ? D.avoid : D.risk,
       checkLabel = branch === "company" ? "求人票でのチェック" : "始める前のチェック",
@@ -5677,7 +5677,7 @@
           return `<details class="inline-q"><summary>${esc(label)}</summary><p class="note"><b>${checkLabel}：</b>${esc(q.check)}</p><p class="note"><b>${askLabel}：</b>${esc(q.ask)}</p></details>`;
         })
         .join("");
-    return `<div class="panel"><h3>避けたい要素と、確認しておくと安心なこと</h3><p class="note">企業や相手を疑うためではなく、入る前・始める前に確認しておくと安心なことの例です。各項目をタップすると開きます。</p>${rows}</div>`;
+    return `<div class="panel"><h3>浅瀬の記録（避けたい要素）</h3><p class="note">企業や相手を疑うためではなく、入る前・始める前に確認しておくと安心なことの例です。各項目をタップすると開きます。</p>${rows}</div>`;
   }
   // 行動ガイド（v1.5.0）：上位候補ごとの検索キーワードと質問
   function renderActionGuidePanel(insight) {
@@ -5728,7 +5728,7 @@
           `<a class="btn secondary" style="display:block;text-align:center;text-decoration:none;margin-top:10px" href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.label)}</a>${x.description ? `<p class="note">${esc(x.description)}</p>` : ""}`
       )
       .join("");
-    return `<div class="panel"><h3>もっと深く整理したい人へ</h3><p class="note">この結果を持って人に相談すると、整理が一気に進みます。信頼できる先輩・キャリアの相談相手に、エクスポートしたJSONやAI分析結果を見せてみてください。</p>${links}</div>`;
+    return `<div class="panel"><h3>港で人に会う</h3><p class="note">この結果を持って人に相談すると、整理が一気に進みます。信頼できる先輩・キャリアの相談相手に、エクスポートしたJSONやAI分析結果を見せてみてください。</p>${links}</div>`;
   }
   // 求人票照合パネル（v1.5.0）
   function renderJobPostingPanel() {
@@ -5979,7 +5979,7 @@
         : current.mode === "explore_more"
           ? "これは未探索候補の追加比較を反映した結果です。まだ比較が浅かった候補の位置づけを確かめるための探索です。"
           : "これはがっつり版の探索結果です。より多くの比較とトレードオフをもとに、迷いの構造と次の検証行動を整理しています。";
-    let headHtml = `<div class="result-head"><div class="eyebrow">CAREER EXPLORATORY MAP · v2.0.3 · ${modeLabelOf(current.mode)}</div><h2>これは回答傾向をもとにした探索用の仮説です。</h2><p>${esc(noteText)}</p><div class="actions" style="margin-top:16px"><button class="btn secondary" id="shareResult">結果をコピー</button><button class="btn secondary" id="downloadResult">結果をテキストで保存</button><button class="btn secondary" id="downloadJson">結果をJSONで保存</button></div></div>`;
+    let headHtml = `<div class="result-head"><div class="eyebrow">CAREER EXPLORATORY MAP · v2.1.0 · ${modeLabelOf(current.mode)}</div><h2>これは回答傾向をもとにした探索用の仮説です。</h2><p>${esc(noteText)}</p><div class="actions" style="margin-top:16px"><button class="btn secondary" id="shareResult">結果をコピー</button><button class="btn secondary" id="downloadResult">結果をテキストで保存</button><button class="btn secondary" id="downloadJson">結果をJSONで保存</button></div></div>`;
     let disclaimerHtml = `<div class="panel"><p class="note">スコアは回答傾向をもとにした探索用の推定値です。比較回数が少ない候補は中央寄りに補正しており、追加比較によって順位が変わる可能性があります。候補名をタップすると、仕事の一日・入り方・収入目安などの詳細が開きます。</p></div>`;
     let tradeoffPanelHtml = "";
     if (!standard) {
@@ -6025,7 +6025,7 @@
         settingsHtml +
         renderJobPostingPanel() +
         renderPromptPanel(prompt) +
-        `<div class="panel"><div class="saved">この結果は端末内の履歴に保存されました</div></div>` +
+        `<div class="panel"><div class="saved">おつかれさま、今日の航海はここまで。結果は航海日誌（履歴）に保存されました</div></div>` +
         deepContinueHtml +
         resultBackHtml +
         reflectionHtml +
@@ -6087,7 +6087,7 @@
       .forEach((x) => x.classList.toggle("active", x.dataset.tab === "history"));
     let h = history();
     screen(
-      `<div class="eyebrow">LOCAL HISTORY</div><h2>過去の比較結果</h2><p class="lead">この端末内に最大${MAX_HISTORY}件保存されます。</p><div class="actions" style="margin:12px 0"><button class="btn secondary" id="importJson">JSONファイルから読み込む</button><input type="file" id="importJsonFile" accept="application/json,.json" hidden></div>${renderScoreTrendChart(h)}${h.length >= 2 ? renderComparisonPanel(h[0]) : ""}${
+      `<div class="eyebrow">SHIP'S LOG</div><h2>航海日誌</h2><p class="lead">この端末内に最大${MAX_HISTORY}件保存されます。</p><div class="actions" style="margin:12px 0"><button class="btn secondary" id="importJson">JSONファイルから読み込む</button><input type="file" id="importJsonFile" accept="application/json,.json" hidden></div>${renderScoreTrendChart(h)}${h.length >= 2 ? renderComparisonPanel(h[0]) : ""}${
         h.length
           ? `<div class="history">${h
               .map((x) => {
@@ -6188,7 +6188,7 @@
       ];
     progress(phase === "result" ? 1 : i / list.length);
     screen(
-      `<div class="section-intro"><div class="section-no">${d[0]}</div><div class="eyebrow">${progressLabel}</div><h2>次は「${d[1]}」${phase === "result" ? "です" : "を行います"}</h2><p class="lead">${d[2]}</p>${phase === "result" ? "" : `<p class="note">${scopeNote}</p>`}${modeNote ? `<p class="note">${modeNote}</p>` : ""}<div class="tip"><b>回答のコツ</b><br>${d[3]}</div><button class="btn primary" id="next">次へ</button><div class="navrow"><span></span><button class="link" id="reset">最初から</button></div></div>`
+      `<div class="section-intro"><div class="section-no">${d[0]}</div><div class="eyebrow">${progressLabel}</div><h2>次は「${d[1]}」${phase === "result" ? "です" : "を行います"}</h2><p class="lead">${d[2]}</p>${phase === "result" ? "" : `<p class="note">${scopeNote}</p>`}${modeNote ? `<p class="note">${modeNote}</p>` : ""}<div class="tip"><b>回答のコツ</b><br>${d[3]}</div><button class="btn primary" id="next">進む</button><div class="navrow"><span></span><button class="link" id="reset">最初から</button></div></div>`
     );
     $("#next").onclick = () => (phase === "result" ? complete() : startPhase(phase));
     $("#reset").onclick = reset;
@@ -6396,7 +6396,7 @@
       id: String(Date.now()),
       created_at: now,
       updated_at: now,
-      version: "2.0.3",
+      version: "2.1.0",
       mode: S.experienceMode,
       status: completion,
       source_session_id: S.sourceSessionId,
@@ -6572,7 +6572,7 @@
         .map((x, i) => `${i + 1}. ${x.label}（${x.score}点）`)
         .join("\n"),
       prompt = r.aiPrompt || r.ai_prompt || "";
-    return `キャリア比較ラボ 結果メモ（v2.0.3）\n作成日時: ${new Date(r.created_at || Date.now()).toLocaleString("ja-JP")}\n\n■ 候補TOP${TOP_N_DISPLAY}\n${candidates}\n\n■ 傾向TOP${insight.topTraits.length}\n${traits}\n\n■ AIプロンプト\n${prompt}\n`;
+    return `キャリア比較ラボ 結果メモ（v2.1.0）\n作成日時: ${new Date(r.created_at || Date.now()).toLocaleString("ja-JP")}\n\n■ 候補TOP${TOP_N_DISPLAY}\n${candidates}\n\n■ 傾向TOP${insight.topTraits.length}\n${traits}\n\n■ AIプロンプト\n${prompt}\n`;
   }
 
   // ==================================================================
@@ -6587,7 +6587,7 @@
   function showUpdateToast(reg) {
     let t = $("#toast");
     if (!t) return;
-    t.textContent = "新しいバージョンがあります（タップで更新）";
+    t.textContent = "新しい海図が届いています（タップで更新）";
     t.classList.add("show", "toast-action");
     t.onclick = () => {
       if (reg.waiting) reg.waiting.postMessage("SKIP_WAITING");
