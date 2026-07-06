@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <meta name="theme-color" content="#17261f">
+  <meta name="theme-color" content="#1E3A50">
   <!-- PWA（v1.6.0）：manifest/sw.jsが無い環境（index.html単体配布）でも全機能が動作する -->
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="icon-192.png">
@@ -12,21 +12,28 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="キャリア比較">
-  <title>キャリア比較ラボ v2.0.0</title>
+  <title>キャリア比較ラボ v2.0.1</title>
   <style>
   /* ==== ベース：カラーパレット・リセット ==== */
   :root {
-    --ink: #17261f;
-    --muted: #657069;
-    --paper: #f5f2e9;
-    --card: #fffdf7;
-    --line: #d8d8cd;
-    --accent: #db5d3b;
-    --green: #2e6b52;
-    --soft: #e5eee7;
-    --shadow: 0 12px 36px #17261f14;
-    --shadow-soft: #17261f08;
-    --hairline: #ebe9e1;
+    /* ==== 海図と航路パレット（この10色以外を追加しない） ==== */
+    --paper: #F6F2E9; /* 背景。古地図の紙 */
+    --paper-raised: #FDFBF5; /* カード面 */
+    --ink: #1E3A50; /* 主要テキスト・線。海図のインク */
+    --ink-soft: #5A7184; /* 補助テキスト */
+    --ink-faint: #9FB0BC; /* 注記・プレースホルダー・罫線 */
+    --course: #2E6E8E; /* 主要アクション・進捗・選択。航路の青 */
+    --compass: #C4553B; /* アクセント。1画面1箇所まで */
+    --brass: #A8854F; /* 計器系（信頼度・スコア）のみ */
+    --shallow: #B0413E; /* 浅瀬（避けたい要素）系のみ */
+    --line: #D9D2C3; /* ボーダー・区切り線 */
+    /* 旧トークン名の別名（既存セレクタ互換） */
+    --muted: var(--ink-soft);
+    --card: var(--paper-raised);
+    --accent: var(--compass);
+    --green: var(--course);
+    --soft: rgba(46, 110, 142, 0.08);
+    --hairline: rgba(30, 58, 80, 0.1);
   }
 
   * {
@@ -88,15 +95,15 @@
 
   .tabs {
     display: flex;
-    border-radius: 12px;
+    border-radius: 4px;
     padding: 3px;
-    background: #e8e5dc;
+    background: rgba(30, 58, 80, 0.06);
   }
 
   .tab {
     border: 0;
     padding: 8px 12px;
-    border-radius: 9px;
+    border-radius: 4px;
     font-size: 13px;
     background: transparent;
     color: var(--muted);
@@ -105,14 +112,13 @@
   .tab.active {
     background: var(--card);
     color: var(--ink);
-    box-shadow: 0 2px 8px #0000000c;
   }
 
   .progress {
     height: 4px;
     border-radius: var(--radius-pill);
     overflow: hidden;
-    background: #dfddd4;
+    background: var(--line);
   }
 
   .progress > i {
@@ -166,7 +172,7 @@
 
   .btn {
     border: 0;
-    border-radius: 16px;
+    border-radius: 4px;
     min-height: 54px;
     padding: 14px 20px;
     font-weight: 800;
@@ -175,7 +181,7 @@
   .btn.primary {
     width: 100%;
     background: var(--ink);
-    color: white;
+    color: var(--paper-raised);
   }
 
   .btn.secondary {
@@ -208,12 +214,11 @@
   .choice {
     width: 100%;
     border: 1px solid var(--line);
-    border-radius: 18px;
+    border-radius: 4px;
     padding: 18px;
     min-height: 56px;
     text-align: left;
     background: var(--card);
-    box-shadow: 0 3px 12px var(--shadow-soft);
   }
 
   .choice strong {
@@ -239,12 +244,11 @@
 
   .pair-card {
     min-height: 190px;
-    border: 2px solid transparent;
-    border-radius: 22px;
+    border: 2px solid var(--line);
+    border-radius: 4px;
     padding: 19px;
     text-align: left;
     background: var(--card);
-    box-shadow: var(--shadow);
   }
 
   .pair-card:active {
@@ -273,7 +277,7 @@
 
   .or button {
     border: 1px solid var(--line);
-    border-radius: 12px;
+    border-radius: 4px;
     padding: 10px 5px;
     font-size: 12px;
     background: transparent;
@@ -283,7 +287,7 @@
   .reason {
     width: 100%;
     border: 1px solid var(--line);
-    border-radius: 13px;
+    border-radius: 4px;
     padding: 13px 14px;
     margin-top: 12px;
     background: var(--card);
@@ -313,7 +317,7 @@
     display: flex;
     gap: 12px;
     border: 1px solid var(--line);
-    border-radius: 15px;
+    border-radius: 4px;
     padding: 14px;
     background: var(--card);
   }
@@ -335,15 +339,15 @@
   }
 
   .result-head {
-    border-radius: 24px;
+    border-radius: 4px;
     padding: 25px;
     margin-bottom: 16px;
     background: var(--ink);
-    color: white;
+    color: var(--paper-raised);
   }
 
   .result-head .eyebrow {
-    color: #a9cbb9;
+    color: var(--ink-faint);
   }
 
   .result-head h2 {
@@ -352,12 +356,12 @@
 
   .result-head p {
     line-height: 1.6;
-    color: #c7d0ca;
+    color: rgba(253, 251, 245, 0.8);
   }
 
   .panel {
     border: 1px solid var(--line);
-    border-radius: 20px;
+    border-radius: 4px;
     padding: 22px 20px;
     margin: 16px 0;
     background: var(--card);
@@ -406,18 +410,18 @@
     border-radius: var(--radius-pill);
     padding: 8px 11px;
     font-size: 12px;
-    background: #f1eee6;
+    background: var(--paper);
   }
 
   .prompt {
     max-height: 250px;
     overflow: auto;
-    border-radius: 12px;
+    border-radius: 4px;
     padding: 14px;
     white-space: pre-wrap;
     font-size: 12px;
     line-height: 1.6;
-    background: #f0eee7;
+    background: var(--paper);
   }
 
   /* ==== 履歴リスト ==== */
@@ -428,7 +432,7 @@
 
   .history-item {
     border: 1px solid var(--line);
-    border-radius: 17px;
+    border-radius: 4px;
     padding: 16px;
     text-align: left;
     background: var(--card);
@@ -460,7 +464,7 @@
     border-radius: var(--radius-pill);
     font-size: 13px;
     background: var(--ink);
-    color: white;
+    color: var(--paper-raised);
     opacity: 0;
     transform: translateX(-50%);
     pointer-events: none;
@@ -498,7 +502,7 @@
     line-height: 1;
     font-weight: 900;
     letter-spacing: -0.08em;
-    color: #dfe8e1;
+    color: rgba(30, 58, 80, 0.12);
   }
 
   .tip {
@@ -547,17 +551,17 @@
 
   .viz .grid {
     fill: none;
-    stroke: #d9ddd7;
+    stroke: var(--line);
     stroke-width: 1;
   }
 
   .viz .axis {
-    stroke: #c8cec9;
+    stroke: var(--ink-faint);
     stroke-width: 1;
   }
 
   .viz .shape {
-    fill: #db5d3b38;
+    fill: rgba(46, 110, 142, 0.22);
     stroke: var(--accent);
     stroke-width: 2;
   }
@@ -569,7 +573,7 @@
 
   .viz .dot {
     fill: var(--accent);
-    stroke: white;
+    stroke: var(--paper-raised);
     stroke-width: 2;
   }
 
@@ -586,13 +590,13 @@
     height: 10px;
     border-radius: var(--radius-pill);
     overflow: hidden;
-    background: #e7e5dc;
+    background: rgba(30, 58, 80, 0.08);
   }
 
   .bar-fill {
     height: 100%;
     border-radius: var(--radius-pill);
-    background: linear-gradient(90deg, var(--green), #78a68d);
+    background: var(--course);
   }
 
   .saved {
@@ -632,7 +636,7 @@
 
   .mode-card {
     border: 1px solid var(--line);
-    border-radius: 22px;
+    border-radius: 4px;
     padding: 20px;
     background: var(--card);
   }
@@ -651,19 +655,7 @@
     margin-bottom: 9px;
   }
 
-  .sort-actions button {
-    border: 1px solid var(--line);
-    border-radius: 9px;
-    padding: 8px 3px;
-    font-size: 11px;
-    background: transparent;
-  }
 
-  .sort-actions button.active {
-    border-color: var(--green);
-    background: var(--green);
-    color: white;
-  }
 
   /* ==== MaxDiff（4択比較） ==== */
   .maxdiff-grid {
@@ -674,8 +666,8 @@
   }
 
   .maxdiff-item {
-    border: 2px solid transparent;
-    border-radius: 15px;
+    border: 2px solid var(--line);
+    border-radius: 4px;
     padding: 15px;
     text-align: left;
     background: var(--card);
@@ -688,7 +680,7 @@
 
   .maxdiff-item.worst {
     border-color: var(--accent);
-    background: #f8e9e3;
+    background: rgba(159, 176, 188, 0.16);
   }
 
   .trade-card ul {
@@ -702,7 +694,7 @@
     min-height: 150px;
     width: 100%;
     border: 1px solid var(--line);
-    border-radius: 15px;
+    border-radius: 4px;
     padding: 15px;
     background: var(--card);
     resize: vertical;
@@ -740,7 +732,7 @@
 
   .md-btn {
     border: 1px solid var(--line);
-    border-radius: 12px;
+    border-radius: 4px;
     padding: 11px 4px;
     min-height: 44px;
     font-size: 12.5px;
@@ -752,13 +744,13 @@
   .md-btn.best.active {
     border-color: var(--green);
     background: var(--green);
-    color: #fff;
+    color: var(--paper-raised);
   }
 
   .md-btn.worst.active {
     border-color: var(--accent);
     background: var(--accent);
-    color: #fff;
+    color: var(--paper-raised);
   }
 
   .md-status {
@@ -771,11 +763,11 @@
   .md-status-item {
     flex: 1;
     min-width: 130px;
-    border-radius: 12px;
+    border-radius: 4px;
     padding: 10px 12px;
     font-size: 12px;
     font-weight: 700;
-    background: #eeece3;
+    background: rgba(30, 58, 80, 0.05);
     color: var(--muted);
   }
 
@@ -794,7 +786,7 @@
     bottom: 0;
     padding: 16px 0 6px;
     margin-top: 8px;
-    background: linear-gradient(to top, var(--paper) 65%, transparent);
+    background: var(--paper);
   }
 
   details.panel summary {
@@ -840,12 +832,13 @@
 
   /* v0.9.8 UI/UX polish (visual only, no logic changes) */
   :root {
-    --primary: #245c46;
-    --primary-dark: #193f30;
-    --danger: #c9663d;
-    --radius: 14px;
-    --radius-lg: 20px;
-    --radius-pill: 99px;
+    --primary: var(--course);
+    --primary-dark: var(--ink);
+    --danger: var(--shallow);
+    /* 角丸は2種類だけ：カード4px・チップ/バッジ2px */
+    --radius: 4px;
+    --radius-lg: 4px;
+    --radius-pill: 2px;
   }
 
   body {
@@ -884,7 +877,6 @@
 
   .btn.primary {
     background: var(--primary);
-    box-shadow: 0 8px 20px #245c4630;
   }
 
   .btn.primary:active {
@@ -1015,7 +1007,6 @@
 
   .maxdiff-item {
     padding: 18px;
-    box-shadow: 0 3px 10px var(--shadow-soft);
   }
 
   .maxdiff-item.best {
@@ -1025,11 +1016,11 @@
 
   .maxdiff-item.worst {
     border-color: var(--danger);
-    background: #f7e9e1;
+    background: rgba(159, 176, 188, 0.16);
   }
 
   .md-btn {
-    border-radius: 11px;
+    border-radius: 4px;
     padding: 12px 6px;
     min-height: 46px;
   }
@@ -1107,7 +1098,7 @@
   }
 
   .bar-fill {
-    background: linear-gradient(90deg, var(--primary), #5c9a80);
+    background: var(--course);
   }
 
   .actions {
@@ -1177,7 +1168,7 @@
   .or button.chosen {
     border-color: var(--primary);
     background: var(--primary);
-    color: white;
+    color: var(--paper-raised);
   }
 
   /* v1.1 接戦ペアワイズの理由タグ */
@@ -1190,21 +1181,20 @@
   .sheet-backdrop {
     position: fixed;
     inset: 0;
-    background: rgba(23, 38, 31, 0.55);
+    background: rgba(30, 58, 80, 0.55);
     z-index: 60;
     display: flex;
     align-items: flex-end;
     justify-content: center;
   }
   .sheet {
-    background: #fdfcf8;
+    background: var(--paper-raised);
     width: 100%;
     max-width: 640px;
     max-height: 86vh;
     overflow-y: auto;
-    border-radius: 20px 20px 0 0;
+    border-radius: 4px 4px 0 0;
     padding: 20px 18px 28px;
-    box-shadow: 0 -8px 30px rgba(23, 38, 31, 0.25);
   }
   .sheet-head {
     display: flex;
@@ -1223,7 +1213,7 @@
     margin: 4px 0;
   }
   .sheet-close {
-    border: 1px solid rgba(23, 38, 31, 0.2);
+    border: 1px solid rgba(30, 58, 80, 0.2);
     background: transparent;
     border-radius: 50%;
     width: 34px;
@@ -1234,7 +1224,7 @@
   }
   .cand-link {
     cursor: pointer;
-    text-decoration: underline dotted rgba(23, 38, 31, 0.4);
+    text-decoration: underline dotted rgba(30, 58, 80, 0.4);
     text-underline-offset: 3px;
   }
 
@@ -1246,7 +1236,7 @@
 
   /* v1.5 展開式の確認ガイド・行動ガイド */
   details.inline-q {
-    border-top: 1px solid rgba(23, 38, 31, 0.08);
+    border-top: 1px solid rgba(30, 58, 80, 0.08);
     padding: 4px 0;
   }
   details.inline-q summary {
@@ -1263,14 +1253,37 @@
 
   /* v1.4 前回との比較（順位変動） */
   .rank em.move-up {
-    color: #2e6b52;
+    color: var(--course);
     font-style: normal;
     font-weight: 700;
   }
   .rank em.move-down {
-    color: #b3593f;
+    color: var(--shallow);
     font-style: normal;
     font-weight: 700;
+  }
+
+  /* ==== 海図トークン適用の個別調整（v2.0.1） ==== */
+  .tab.active {
+    background: var(--paper-raised);
+    border: 1px solid var(--line);
+  }
+  .maxdiff-item.best {
+    border-color: var(--compass);
+  }
+  .maxdiff-item.worst {
+    border-color: var(--ink-faint);
+    background: rgba(159, 176, 188, 0.12);
+  }
+  .md-btn.best.active {
+    background: var(--compass);
+    border-color: var(--compass);
+    color: var(--paper-raised);
+  }
+  .md-btn.worst.active {
+    background: var(--ink-faint);
+    border-color: var(--ink-faint);
+    color: var(--ink);
   }
 </style>
 </head>
@@ -5052,7 +5065,7 @@
       roleBoxes = ROLE_FILTERS.map((x) => box(x, "scope-role", f.roleIds)).join(""),
       scopeHtml = `<details class="panel" id="scopeFilterPanel"><summary>探索範囲を最初から決めておく（任意）</summary><p class="note">最初から範囲をある程度決めたい人向けの設定です。選んだ業界・仕事の種類に合う候補だけを比較対象にします。未選択なら全候補が対象です。やり直したくなったら「最初から」でいつでも広げ直せます。</p><p class="note">※途中の「探索範囲を選ぶ」画面は候補を減らさずに出題の配合を調整しますが、ここでの設定は比較対象そのものを絞ります。</p><p class="note" style="margin:14px 0 6px"><b>業界・業種</b></p><div class="checks">${industryBoxes}</div><p class="note" style="margin:14px 0 6px"><b>探索したい仕事の種類</b></p><div class="checks">${roleBoxes}</div></details>`;
     screen(
-      `<div class="hero"><div class="eyebrow">CAREER PAIRWISE LAB · v2.0.0</div><h1>自分でも気づいていない、<br>働き方の傾向を探ろう。</h1><p class="lead">4択比較や2択トレードオフに答えるだけで、<br>自分の判断軸が見えてくる探索ツールです。<br>結果は正解ではなく、次に調べる仮説として使ってください。</p>${resumeHtml}${scopeHtml}<div class="mode-grid"><div class="mode-card"><span class="time-badge">⏱ 12〜15分</span><h3>標準版</h3><p>まず傾向と可能性マップを見る</p><button class="btn primary" data-mode-start="standard">標準版で始める</button></div><div class="mode-card"><span class="time-badge">⏱ 25〜35分</span><h3>がっつり版</h3><p>迷い・接戦・価値観まで深く見る</p><button class="btn primary" data-mode-start="deep">がっつり版で始める</button></div></div><p class="note">個人情報は入力しません。回答は端末内だけに保存され、外部へ送信されません。</p></div>`
+      `<div class="hero"><div class="eyebrow">CAREER PAIRWISE LAB · v2.0.1</div><h1>自分でも気づいていない、<br>働き方の傾向を探ろう。</h1><p class="lead">4択比較や2択トレードオフに答えるだけで、<br>自分の判断軸が見えてくる探索ツールです。<br>結果は正解ではなく、次に調べる仮説として使ってください。</p>${resumeHtml}${scopeHtml}<div class="mode-grid"><div class="mode-card"><span class="time-badge">⏱ 12〜15分</span><h3>標準版</h3><p>まず傾向と可能性マップを見る</p><button class="btn primary" data-mode-start="standard">標準版で始める</button></div><div class="mode-card"><span class="time-badge">⏱ 25〜35分</span><h3>がっつり版</h3><p>迷い・接戦・価値観まで深く見る</p><button class="btn primary" data-mode-start="deep">がっつり版で始める</button></div></div><p class="note">個人情報は入力しません。回答は端末内だけに保存され、外部へ送信されません。</p></div>`
     );
     root.querySelectorAll("[data-mode-start]").forEach(
       (b) =>
@@ -5448,7 +5461,7 @@
       .map((p, i) => {
         let x = 170 + p.x * 115,
           y = 160 - p.y * 115,
-          color = p.domain === "company" ? "#2e6b52" : "#db5d3b";
+          color = p.domain === "company" ? "#2E6E8E" : "#A8854F";
         return `<circle cx="${x}" cy="${y}" r="7" fill="${color}" stroke="white" stroke-width="2"/><text x="${x}" y="${y + (i % 2 ? 18 : -12)}" text-anchor="middle">${esc(p.label.slice(0, 9))}</text>`;
       })
       .join("")}</svg>`;
@@ -5468,7 +5481,7 @@
     return `<details class="panel"><summary>traitレーダーを見る</summary><p class="note">この図は16の傾向スコアのうち上位8つを相対表示しています。能力の高さではありません。</p>${renderRadarChart(insight.topTraits)}</details>`;
   }
   function renderPossibilityMapPanel(insight) {
-    return `<details class="panel"><summary>キャリア可能性マップを見る</summary><p>${insight.lean}。</p>${renderPossibilityMap(insight.possibilityMap.points || [])}<p class="note">このマップは正解ではなく、回答傾向をもとにした探索用の仮説です。緑は会社員候補、橙は個人活動候補です。</p></details>`;
+    return `<details class="panel"><summary>キャリア可能性マップを見る</summary><p>${insight.lean}。</p>${renderPossibilityMap(insight.possibilityMap.points || [])}<p class="note">このマップは正解ではなく、回答傾向をもとにした探索用の仮説です。濃い青が会社員候補、真鍮色が個人活動候補です。</p></details>`;
   }
   function renderAvoidLeaningPanel(insight) {
     return insight.avoidLeaning && insight.avoidLeaning.length
@@ -5596,7 +5609,7 @@
       plotH = hgt - padT - padB,
       xOf = (i) => padL + (count <= 1 ? plotW / 2 : (i / (count - 1)) * plotW),
       yOf = (s) => padT + plotH - (Math.max(0, Math.min(100, s)) / 100) * plotH,
-      colors = ["#db5d3b", "#2e6b52", "#8a7a4f"],
+      colors = ["#2E6E8E", "#A8854F", "#5A7184"],
       gridLines = [0, 25, 50, 75, 100]
         .map(
           (v) =>
@@ -5805,7 +5818,7 @@
         : current.mode === "explore_more"
           ? "これは未探索候補の追加比較を反映した結果です。まだ比較が浅かった候補の位置づけを確かめるための探索です。"
           : "これはがっつり版の探索結果です。より多くの比較とトレードオフをもとに、迷いの構造と次の検証行動を整理しています。";
-    let headHtml = `<div class="result-head"><div class="eyebrow">CAREER EXPLORATORY MAP · v2.0.0 · ${modeLabelOf(current.mode)}</div><h2>これは回答傾向をもとにした探索用の仮説です。</h2><p>${esc(noteText)}</p><div class="actions" style="margin-top:16px"><button class="btn secondary" id="shareResult">結果をコピー</button><button class="btn secondary" id="downloadResult">結果をテキストで保存</button><button class="btn secondary" id="downloadJson">結果をJSONで保存</button></div></div>`;
+    let headHtml = `<div class="result-head"><div class="eyebrow">CAREER EXPLORATORY MAP · v2.0.1 · ${modeLabelOf(current.mode)}</div><h2>これは回答傾向をもとにした探索用の仮説です。</h2><p>${esc(noteText)}</p><div class="actions" style="margin-top:16px"><button class="btn secondary" id="shareResult">結果をコピー</button><button class="btn secondary" id="downloadResult">結果をテキストで保存</button><button class="btn secondary" id="downloadJson">結果をJSONで保存</button></div></div>`;
     let disclaimerHtml = `<div class="panel"><p class="note">スコアは回答傾向をもとにした探索用の推定値です。比較回数が少ない候補は中央寄りに補正しており、追加比較によって順位が変わる可能性があります。候補名をタップすると、仕事の一日・入り方・収入目安などの詳細が開きます。</p></div>`;
     let tradeoffPanelHtml = "";
     if (!standard) {
@@ -6222,7 +6235,7 @@
       id: String(Date.now()),
       created_at: now,
       updated_at: now,
-      version: "2.0.0",
+      version: "2.0.1",
       mode: S.experienceMode,
       status: completion,
       source_session_id: S.sourceSessionId,
@@ -6398,7 +6411,7 @@
         .map((x, i) => `${i + 1}. ${x.label}（${x.score}点）`)
         .join("\n"),
       prompt = r.aiPrompt || r.ai_prompt || "";
-    return `キャリア比較ラボ 結果メモ（v2.0.0）\n作成日時: ${new Date(r.created_at || Date.now()).toLocaleString("ja-JP")}\n\n■ 候補TOP${TOP_N_DISPLAY}\n${candidates}\n\n■ 傾向TOP${insight.topTraits.length}\n${traits}\n\n■ AIプロンプト\n${prompt}\n`;
+    return `キャリア比較ラボ 結果メモ（v2.0.1）\n作成日時: ${new Date(r.created_at || Date.now()).toLocaleString("ja-JP")}\n\n■ 候補TOP${TOP_N_DISPLAY}\n${candidates}\n\n■ 傾向TOP${insight.topTraits.length}\n${traits}\n\n■ AIプロンプト\n${prompt}\n`;
   }
 
   // ==================================================================
