@@ -15,7 +15,7 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="キャリア比較">
-  <title>キャリア比較ラボ v2.1.0</title>
+  <title>キャリア比較ラボ v2.2.0</title>
   <style>
   /* ==== ベース：カラーパレット・リセット ==== */
   :root {
@@ -1439,6 +1439,165 @@
   }
   .viz text {
     font-family: var(--font-display);
+  }
+
+  /* ==== v2.2.0: shareable result map ==== */
+  .voyage-type {
+    border: 1px solid var(--line);
+    background: var(--paper-raised);
+    border-radius: 4px;
+    padding: 18px;
+  }
+  .voyage-type h3,
+  .share-card h3,
+  .island-card h3 {
+    font-family: var(--font-display);
+  }
+  .voyage-type h3 {
+    margin: 6px 0 8px;
+    font-size: 24px;
+  }
+  .role-model {
+    border-left: 2px solid var(--course);
+    padding-left: 12px;
+    margin-top: 12px;
+  }
+  .island-ranking {
+    display: grid;
+    gap: 12px;
+  }
+  .island-card {
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    background: var(--paper-raised);
+    padding: 16px;
+    position: relative;
+    overflow: hidden;
+  }
+  .island-card::before {
+    content: "";
+    position: absolute;
+    right: 14px;
+    top: 14px;
+    width: var(--island-size, 84px);
+    height: calc(var(--island-size, 84px) * 0.58);
+    border: 1px solid var(--line);
+    border-radius: 50%;
+    opacity: 0.35;
+    transform: rotate(-6deg);
+  }
+  .island-card.top1 {
+    --island-size: 132px;
+    padding: 20px;
+  }
+  .island-card.top2 {
+    --island-size: 104px;
+  }
+  .island-card.top3 {
+    --island-size: 82px;
+    background: var(--paper);
+  }
+  .island-card.unexplored {
+    border-style: dashed;
+    opacity: 0.78;
+  }
+  .island-head {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 12px;
+    align-items: center;
+    position: relative;
+  }
+  .island-rank {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    border: 1px solid var(--line);
+    border-radius: 50%;
+    width: 34px;
+    height: 34px;
+    display: grid;
+    place-items: center;
+    background: var(--paper-raised);
+  }
+  .job-icon {
+    width: 42px;
+    height: 42px;
+    color: var(--ink);
+  }
+  .job-icon svg {
+    width: 100%;
+    height: 100%;
+    stroke: currentColor;
+    fill: none;
+    stroke-width: 1.7;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .bar-row {
+    grid-template-columns: 26px 34px minmax(92px, 1fr) 1fr 34px;
+  }
+  .bar-row .job-icon {
+    width: 34px;
+    height: 34px;
+  }
+  .island-card h3 {
+    margin: 0;
+    font-size: 20px;
+  }
+  .island-card.top1 h3 {
+    font-size: 30px;
+    line-height: 1.25;
+  }
+  .island-card.top2 h3 {
+    font-size: 24px;
+  }
+  .island-score {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    text-align: right;
+  }
+  .share-card {
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    background: var(--paper-raised);
+    padding: 18px;
+  }
+  .share-preview {
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: 16px;
+    background: var(--paper);
+  }
+  .share-preview ol {
+    margin: 10px 0 10px 20px;
+  }
+  .share-preview li {
+    margin: 4px 0;
+  }
+  .share-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 10px;
+  }
+  @media (max-width: 560px) {
+    .bar-row {
+      grid-template-columns: 22px 30px minmax(74px, 1fr) 1fr 28px;
+    }
+    .bar-row .job-icon {
+      width: 30px;
+      height: 30px;
+    }
+    .island-head {
+      grid-template-columns: auto 1fr;
+    }
+    .island-score {
+      grid-column: 1 / -1;
+      text-align: left;
+    }
+    .island-card.top1 h3 {
+      font-size: 25px;
+    }
   }
 </style>
 </head>
@@ -5220,7 +5379,7 @@
       roleBoxes = ROLE_FILTERS.map((x) => box(x, "scope-role", f.roleIds)).join(""),
       scopeHtml = `<details class="panel" id="scopeFilterPanel"><summary>探索範囲を最初から決めておく（任意）</summary><p class="note">最初から範囲をある程度決めたい人向けの設定です。選んだ業界・仕事の種類に合う候補だけを比較対象にします。未選択なら全候補が対象です。やり直したくなったら「最初から」でいつでも広げ直せます。</p><p class="note">※途中の「探索範囲を選ぶ」画面は候補を減らさずに出題の配合を調整しますが、ここでの設定は比較対象そのものを絞ります。</p><p class="note" style="margin:14px 0 6px"><b>業界・業種</b></p><div class="checks">${industryBoxes}</div><p class="note" style="margin:14px 0 6px"><b>探索したい仕事の種類</b></p><div class="checks">${roleBoxes}</div></details>`;
     screen(
-      `<div class="hero"><div class="eyebrow">CAREER PAIRWISE LAB · v2.1.0</div><h1>自分でも気づいていない、<br>働き方の傾向を探ろう。</h1><p class="lead">あなたのキャリアの海図を、自分の手で描くための探索ツールです。<br>4択比較に答えるだけで、自分の判断軸が見えてきます。<br>結果は正解ではなく、次に調べる仮説として使ってください。</p>${resumeHtml}${scopeHtml}<div class="mode-grid"><div class="mode-card"><span class="time-badge">12〜15分</span><h3>標準版</h3><p>まず傾向と可能性マップを見る</p><button class="btn primary" data-mode-start="standard">標準版で出航する</button></div><div class="mode-card"><span class="time-badge">25〜35分</span><h3>がっつり版</h3><p>迷い・接戦・価値観まで深く見る</p><button class="btn primary" data-mode-start="deep">がっつり版で出航する</button></div></div><p class="note">個人情報は入力しません。回答は端末内だけに保存され、外部へ送信されません。</p></div>`
+      `<div class="hero"><div class="eyebrow">CAREER PAIRWISE LAB · v2.2.0</div><h1>自分でも気づいていない、<br>働き方の傾向を探ろう。</h1><p class="lead">あなたのキャリアの海図を、自分の手で描くための探索ツールです。<br>4択比較に答えるだけで、自分の判断軸が見えてきます。<br>結果は正解ではなく、次に調べる仮説として使ってください。</p>${resumeHtml}${scopeHtml}<div class="mode-grid"><div class="mode-card"><span class="time-badge">12〜15分</span><h3>標準版</h3><p>まず傾向と可能性マップを見る</p><button class="btn primary" data-mode-start="standard">標準版で出航する</button></div><div class="mode-card"><span class="time-badge">25〜35分</span><h3>がっつり版</h3><p>迷い・接戦・価値観まで深く見る</p><button class="btn primary" data-mode-start="deep">がっつり版で出航する</button></div></div><p class="note">個人情報は入力しません。回答は端末内だけに保存され、外部へ送信されません。</p></div>`
     );
     root.querySelectorAll("[data-mode-start]").forEach(
       (b) =>
@@ -5627,13 +5786,152 @@
       })
       .join("")}</svg>`;
   }
+  function candidateIconKind(x) {
+    let key = [x.id, x.category, x.role_category, x.industry_category, x.domain].filter(Boolean).join("_");
+    if (/sales|customer|store_service|it_sales|medical_rep|real_estate_sales|finance_sales|direct_customer/.test(key)) return "talk";
+    if (/planning|business|product|founder|new_business|buyer|merchandiser|development/.test(key)) return "map";
+    if (/engineering|tech|data|ai|security|cloud|mobile|it_|saas/.test(key)) return "code";
+    if (/recruit|org|career|training|education|school|coaching|childcare|support|community/.test(key)) return "guide";
+    if (/creative|design|video|music|illustration|writing|photo|game|sns|content|stage|voice/.test(key)) return "pen";
+    if (/store|restaurant|cafe|kitchen|shop|goods|ec|farming|franchise|bar|rental/.test(key)) return "shop";
+    if (/medical|welfare|care|nurse|psychologist|health|beauty|bodycare|babysitting/.test(key)) return "care";
+    return "lens";
+  }
+  function jobIcon(kind) {
+    let paths = {
+      talk: `<circle cx="14" cy="13" r="4"/><circle cx="29" cy="15" r="4"/><path d="M7 31c1.5-6 11.5-6 14 0"/><path d="M22 31c1.5-5 10-5 12 0"/><path d="M19 10h8"/><path d="M27 10l3-3"/>`,
+      map: `<path d="M8 10l9-3 9 3 10-3v25l-10 3-9-3-9 3z"/><path d="M17 7v25"/><path d="M26 10v25"/><path d="M21 15h7"/><path d="M28 15l-2-2"/>`,
+      code: `<rect x="7" y="9" width="30" height="22" rx="2"/><path d="M16 17l-4 4 4 4"/><path d="M28 17l4 4-4 4"/><path d="M24 15l-4 12"/>`,
+      guide: `<circle cx="18" cy="13" r="4"/><path d="M9 33c1.5-7 15-7 18 0"/><path d="M28 13h7"/><path d="M31 9v8"/><path d="M29 27c4-1 6-4 7-8"/>`,
+      pen: `<path d="M10 32l5-2 17-17-3-3-17 17z"/><path d="M27 12l3 3"/><path d="M9 35h26"/><path d="M18 13c-2-3-1-6 2-7 4-1 6 2 5 5"/>`,
+      shop: `<path d="M9 17h26l-3-8H12z"/><path d="M11 17v17h22V17"/><path d="M15 34V23h8v11"/><path d="M26 23h5"/><path d="M26 28h5"/>`,
+      care: `<path d="M13 22c4-6 8-6 12 0"/><path d="M9 25c5 8 20 8 26 0"/><path d="M22 9v10"/><path d="M17 14h10"/><path d="M12 30l-3 4"/><path d="M32 30l3 4"/>`,
+      lens: `<circle cx="19" cy="18" r="9"/><path d="M26 25l9 9"/><path d="M15 18h8"/><path d="M19 14v8"/>`
+    };
+    return `<span class="job-icon" aria-hidden="true"><svg viewBox="0 0 44 44">${paths[kind] || paths.lens}</svg></span>`;
+  }
+  function voyageTypeFor(insight) {
+    let top = insight.overall[0] || {},
+      traits = (insight.topTraits || []).map((x) => x.id),
+      key = [top.id, top.category, top.domain, ...traits].join("_");
+    if (/sales|talk_solve|team_talk|customer|direct_customer/.test(key))
+      return { title: "場を動かす航海士タイプ", role: "人の反応を読みながら、場の流れを前に進めるロールモデル像です。", comment: "対話と実行の間に、次の航路が見えやすいかもしれません。" };
+    if (/structure_design|planning|operation|stable_operation|corporate|product/.test(key))
+      return { title: "仕組みを描く設計士タイプ", role: "複雑な状況をほどき、働く仕組みや事業の骨組みを描くロールモデル像です。", comment: "構造を整える仕事に、手応えが出やすいかもしれません。" };
+    if (/small_business|store|shop|goods|kitchen|cafe|restaurant/.test(key))
+      return { title: "小さな商いを育てる店主タイプ", role: "自分の目が届く範囲で価値を磨き、お客さんとの関係を育てるロールモデル像です。", comment: "小さく試して続ける航路が合う可能性があります。" };
+    if (/career|training|education|support|coaching|team_growth|social_value/.test(key))
+      return { title: "人の転機に伴走する案内人タイプ", role: "相手の変化や成長に寄り添い、次の一歩を一緒に探すロールモデル像です。", comment: "誰かの転機を支える場面に、力を使いやすいかもしれません。" };
+    if (/creative|expression|design|video|music|writing|illustration|photo|make_product/.test(key))
+      return { title: "作品を積み上げる表現者タイプ", role: "表現や制作を積み重ね、見える形で価値を届けるロールモデル像です。", comment: "作って見せることで、自分の輪郭が出やすいかもしれません。" };
+    if (/new_business|zero_to_one|founder|business_development|risk_tolerance/.test(key))
+      return { title: "未知の事業を探す開拓者タイプ", role: "まだ形になっていない機会を探し、仮説を試しながら前に進むロールモデル像です。", comment: "未確定な海域ほど、探索意欲が動く可能性があります。" };
+    return { title: "安定した港を守る運用者タイプ", role: "日々の仕組みを安定して回し、周囲が安心して動ける土台を守るロールモデル像です。", comment: "継続と改善を重ねる仕事に、強みが出やすいかもしれません。" };
+  }
+  function renderVoyageTypePanel(insight) {
+    let type = voyageTypeFor(insight);
+    return `<div class="voyage-type"><div class="eyebrow">ROUTE TYPE</div><h3>${esc(type.title)}</h3><p class="note">これは診断結果ではなく、今の回答から見るキャリア仮説です。断定ではなく、次に調べるための名前として見てください。</p><div class="role-model"><b>ロールモデル像</b><p class="note">${esc(type.role)}</p></div></div>`;
+  }
+  function renderIslandRanking(insight) {
+    let top = insight.overall.slice(0, 3),
+      rest = insight.overall.slice(3, TOP_N_DISPLAY),
+      cards = top
+        .map((x, i) => `<div class="island-card top${i + 1}"><div class="island-head"><span class="island-rank">${i + 1}</span>${jobIcon(candidateIconKind(x))}<div><h3 class="cand-link" data-sheet="${esc(x.id)}">${esc(x.label)}</h3><p class="note">${esc(x.detail || x.desc || x.description || "")}</p></div><div class="island-score">${x.displayScore}点<br>信頼度 ${getConfidenceLabel(x.confidence)}</div></div><div class="rank-meta">これは仮説です · 比較 ${Math.round(x.played * 10) / 10}回 · Best ${x.bestCount || 0}回 · Worst ${x.worstCount || 0}回</div></div>`)
+        .join("");
+    let list = rest.length
+      ? `<div class="panel"><h3>4位以下の候補</h3>${rest.map((x, i) => `<div class="rank"><b class="cand-link" data-sheet="${esc(x.id)}">${i + 4}. ${esc(x.label)}</b><em>${x.displayScore}点 · ${getConfidenceLabel(x.confidence)}</em></div>`).join("")}</div>`
+      : "";
+    return `<div class="panel"><h3>島で見る上位候補</h3><p class="note">1位は大きな島、2位は中くらいの島、3位は小さな島として表示しています。どれも確定ではなく、今の回答から見た仮説です。</p><div class="island-ranking">${cards || '<p class="note">回答数が少ないため、候補はまだ未確定です。</p>'}</div></div>${list}`;
+  }
+  function shareUrl() {
+    return location && location.href ? location.href.split("#")[0] : "https://example.com/";
+  }
+  function sharePayload(insight) {
+    let type = voyageTypeFor(insight),
+      top3 = insight.overall.slice(0, 3),
+      tags = insight.topTraits.slice(0, 3).map((x) => x.label);
+    return { type, top3, tags, url: shareUrl() };
+  }
+  function xShareText(insight) {
+    let p = sharePayload(insight);
+    return `キャリア比較ラボで自分の航路を見てみた。\n今の私は「${p.type.title}」かもしれない。\n\n気になる候補：\n\n${p.top3.map((x, i) => `${i + 1}. ${x.label}`).join("\n")}\n\nこれは診断結果ではなく、今の回答から見たキャリア仮説です。\n${p.url}`;
+  }
+  function renderShareCard(insight) {
+    let p = sharePayload(insight);
+    return `<div class="share-card" id="shareCard"><div class="eyebrow">SHARE CARD</div><h3>キャリア比較ラボ</h3><div class="share-preview"><p class="note">航路タイプ</p><h3>${esc(p.type.title)}</h3><ol>${p.top3.map((x) => `<li>${esc(x.label)}</li>`).join("")}</ol><div class="share-tags">${p.tags.map((t) => `<span class="chip">#${esc(t)}</span>`).join("")}</div><p class="note">${esc(p.type.comment)}</p><p class="rank-meta">${esc(p.url)}</p></div><div class="actions" style="margin-top:14px"><button class="btn secondary" id="copyXText">X投稿用テキストをコピー</button><button class="btn secondary" id="downloadShareImage">共有画像を保存</button><button class="btn secondary" id="nativeShare">端末の共有を開く</button></div><p class="note">Instagramには直接投稿せず、1080×1350pxの縦長画像として保存して使えます。</p></div>`;
+  }
+  function drawWrapped(ctx, text, x, y, maxWidth, lineHeight) {
+    let line = "";
+    String(text).split("").forEach((ch) => {
+      let test = line + ch;
+      if (ctx.measureText(test).width > maxWidth && line) {
+        ctx.fillText(line, x, y);
+        y += lineHeight;
+        line = ch;
+      } else line = test;
+    });
+    if (line) ctx.fillText(line, x, y);
+    return y + lineHeight;
+  }
+  function downloadShareImage(insight) {
+    let p = sharePayload(insight),
+      canvas = document.createElement("canvas"),
+      ctx = canvas.getContext("2d");
+    canvas.width = 1080;
+    canvas.height = 1350;
+    let css = getComputedStyle(document.documentElement),
+      paper = css.getPropertyValue("--paper").trim() || "#F7F1E6",
+      raised = css.getPropertyValue("--paper-raised").trim() || "#FFF8EC",
+      ink = css.getPropertyValue("--ink").trim() || "#1E3A50",
+      line = css.getPropertyValue("--line").trim() || "#D7C8AA",
+      course = css.getPropertyValue("--course").trim() || "#C4553B";
+    ctx.fillStyle = paper;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.strokeStyle = line;
+    ctx.lineWidth = 4;
+    ctx.strokeRect(56, 56, 968, 1238);
+    ctx.fillStyle = raised;
+    ctx.fillRect(88, 88, 904, 1174);
+    ctx.strokeStyle = course;
+    ctx.setLineDash([12, 12]);
+    ctx.beginPath();
+    ctx.moveTo(140, 1010);
+    ctx.bezierCurveTo(310, 900, 430, 1110, 620, 980);
+    ctx.bezierCurveTo(750, 890, 830, 960, 930, 860);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = ink;
+    ctx.font = "28px sans-serif";
+    ctx.fillText("CAREER PAIRWISE LAB", 140, 170);
+    ctx.font = "60px serif";
+    let y = drawWrapped(ctx, p.type.title, 140, 270, 800, 76);
+    ctx.font = "30px sans-serif";
+    y = drawWrapped(ctx, p.type.comment, 140, y + 24, 800, 44);
+    ctx.font = "34px sans-serif";
+    ctx.fillText("気になる候補", 140, y + 58);
+    ctx.font = "44px serif";
+    p.top3.forEach((x, i) => {
+      ctx.fillText(`${i + 1}. ${x.label}`, 160, y + 126 + i * 72);
+    });
+    ctx.font = "28px sans-serif";
+    ctx.fillText(p.tags.map((t) => `#${t}`).join("  "), 140, y + 380);
+    ctx.font = "24px sans-serif";
+    drawWrapped(ctx, "これは診断結果ではなく、今の回答から見たキャリア仮説です。", 140, 1120, 800, 36);
+    ctx.fillText(p.url, 140, 1204);
+    let a = document.createElement("a");
+    a.download = "career-pairwise-lab-share.png";
+    a.href = canvas.toDataURL("image/png");
+    document.body.append(a);
+    a.click();
+    a.remove();
+  }
   function bars(title, items, variant) {
     return `<div class="panel${variant ? " panel-" + variant : ""}"><h3>${title}</h3>${
       items
         .slice(0, TOP_N_DISPLAY)
         .map(
           (x, i) =>
-            `<div class="rank-wrap"><div class="bar-row"><span class="num">${i + 1}</span><b class="cand-link" data-sheet="${esc(x.id)}">${esc(x.label)}</b><div class="bar-track"><div class="bar-fill" style="width:${x.displayScore}%"></div></div><span>${x.displayScore}</span></div><div class="rank-meta">比較 ${Math.round(x.played * 10) / 10}回 · 信頼度 ${getConfidenceLabel(x.confidence)} · Best ${x.bestCount || 0}回 · Worst ${x.worstCount || 0}回</div>${variant === "positive" && x.detail ? `<div class="candidate-detail">${esc(x.detail)}</div>` : ""}</div>`
+            `<div class="rank-wrap"><div class="bar-row"><span class="num">${i + 1}</span>${jobIcon(candidateIconKind(x))}<b class="cand-link" data-sheet="${esc(x.id)}">${esc(x.label)}</b><div class="bar-track"><div class="bar-fill" style="width:${x.displayScore}%"></div></div><span>${x.displayScore}</span></div><div class="rank-meta">比較 ${Math.round(x.played * 10) / 10}回 · 信頼度 ${getConfidenceLabel(x.confidence)} · Best ${x.bestCount || 0}回 · Worst ${x.worstCount || 0}回</div>${variant === "positive" && x.detail ? `<div class="candidate-detail">${esc(x.detail)}</div>` : ""}</div>`
         )
         .join("") || '<p class="note">回答数が少ないため候補は未確定です。</p>'
     }</div>`;
@@ -5653,7 +5951,7 @@
     return `<div class="panel panel-contest"><h3>迷い・接戦ポイント</h3>${insight.closeContests.map((x) => `<div class="contest">${esc(x)}</div>`).join("")}</div>`;
   }
   function renderUnexploredPanel(insight) {
-    return `<div class="panel"><h3>まだ見ぬ海域（未探索候補）</h3><p class="note">まだ十分に比べていませんが、trait相性から追加で見る価値がありそうです。</p>${insight.unexplored.map((x) => `<div class="rank"><b class="cand-link" data-sheet="${esc(x.id)}">${esc(x.label)}</b><em>未探索</em></div>`).join("")}${insight.unexplored.length ? `<button class="btn secondary" id="exploreMore" style="width:100%;margin-top:12px">未探索候補をあと5問比べる</button>` : ""}</div>`;
+    return `<div class="panel"><h3>まだ見ぬ海域（未探索候補）</h3><p class="note">まだ十分に比べていませんが、trait相性から追加で見る価値がありそうです。</p>${insight.unexplored.map((x) => `<div class="island-card unexplored"><div class="island-head">${jobIcon(candidateIconKind(x))}<div><h3 class="cand-link" data-sheet="${esc(x.id)}">${esc(x.label)}</h3><p class="note">${esc(x.detail || x.desc || x.description || "")}</p></div><div class="island-score">未探索</div></div></div>`).join("")}${insight.unexplored.length ? `<button class="btn secondary" id="exploreMore" style="width:100%;margin-top:12px">未探索候補をあと5問比べる</button>` : ""}</div>`;
   }
   function renderMisfitPanel(insight) {
     return insight.misfitEnvironments && insight.misfitEnvironments.length
@@ -5979,7 +6277,7 @@
         : current.mode === "explore_more"
           ? "これは未探索候補の追加比較を反映した結果です。まだ比較が浅かった候補の位置づけを確かめるための探索です。"
           : "これはがっつり版の探索結果です。より多くの比較とトレードオフをもとに、迷いの構造と次の検証行動を整理しています。";
-    let headHtml = `<div class="result-head"><div class="eyebrow">CAREER EXPLORATORY MAP · v2.1.0 · ${modeLabelOf(current.mode)}</div><h2>これは回答傾向をもとにした探索用の仮説です。</h2><p>${esc(noteText)}</p><div class="actions" style="margin-top:16px"><button class="btn secondary" id="shareResult">結果をコピー</button><button class="btn secondary" id="downloadResult">結果をテキストで保存</button><button class="btn secondary" id="downloadJson">結果をJSONで保存</button></div></div>`;
+    let headHtml = `<div class="result-head"><div class="eyebrow">CAREER EXPLORATORY MAP · v2.2.0 · ${modeLabelOf(current.mode)}</div><h2>これは回答傾向をもとにした探索用の仮説です。</h2><p>${esc(noteText)}</p><div class="actions" style="margin-top:16px"><button class="btn secondary" id="shareResult">結果をコピー</button><button class="btn secondary" id="copyXTextTop">X投稿文をコピー</button><button class="btn secondary" id="downloadResult">結果をテキストで保存</button><button class="btn secondary" id="downloadJson">結果をJSONで保存</button></div></div>`;
     let disclaimerHtml = `<div class="panel"><p class="note">スコアは回答傾向をもとにした探索用の推定値です。比較回数が少ない候補は中央寄りに補正しており、追加比較によって順位が変わる可能性があります。候補名をタップすると、仕事の一日・入り方・収入目安などの詳細が開きます。</p></div>`;
     let tradeoffPanelHtml = "";
     if (!standard) {
@@ -6005,7 +6303,9 @@
     screen(
       headHtml +
         disclaimerHtml +
-        bars("関心が寄っている可能性", insight.overall, "positive") +
+        renderVoyageTypePanel(insight) +
+        renderIslandRanking(insight) +
+        renderShareCard(insight) +
         renderComparisonPanel(current) +
         renderFalsificationEntry(current, insight) +
         renderAvoidLeaningPanel(insight) +
@@ -6069,6 +6369,19 @@
       toast("メモを保存しました");
     };
     $("#shareResult").onclick = () => copy(shareText(exportInsight));
+    let copyXTop = $("#copyXTextTop"),
+      copyX = $("#copyXText"),
+      downloadImage = $("#downloadShareImage"),
+      nativeShare = $("#nativeShare");
+    if (copyXTop) copyXTop.onclick = () => copy(xShareText(exportInsight));
+    if (copyX) copyX.onclick = () => copy(xShareText(exportInsight));
+    if (downloadImage) downloadImage.onclick = () => downloadShareImage(exportInsight);
+    if (nativeShare)
+      nativeShare.onclick = () => {
+        let text = xShareText(exportInsight);
+        if (navigator.share) navigator.share({ title: "キャリア比較ラボ", text, url: shareUrl() }).catch(() => {});
+        else copy(text);
+      };
     $("#downloadResult").onclick = () =>
       downloadText(
         `career-pairwise-lab-result-${r.id || Date.now()}.txt`,
@@ -6396,7 +6709,7 @@
       id: String(Date.now()),
       created_at: now,
       updated_at: now,
-      version: "2.1.0",
+      version: "2.2.0",
       mode: S.experienceMode,
       status: completion,
       source_session_id: S.sourceSessionId,
@@ -6542,6 +6855,7 @@
     return `以下は、キャリア探索ツール「キャリア比較ラボ」でのユーザーの自己分析サマリーです。\n\n現在地: ${r.user_status?.label || "不明"}\n希望する・気になるキャリア形態: ${desired}\n関心が寄っている候補TOP${TOP_N_DISPLAY}:\n${top}\n接戦で繰り返し選んだ判断軸: ${axis}\n避けたい要素:\n${avoidLines}\n\nこの後にユーザーが貼る求人票（または案件・募集要項）を、上記の診断結果と照合してください。特に避けたい要素との矛盾の可能性、記載が無く面接で確認すべき点を、断定せずに指摘してください。企業を批判せず、ユーザーが確認すべき問いのリストとして出力してください。`;
   }
   function shareText(insight) {
+    let p = sharePayload(insight);
     let top3 = insight.overall
         .slice(0, 3)
         .map((x, i) => `${i + 1}. ${x.label}（${x.displayScore}点）`)
@@ -6550,7 +6864,7 @@
         .slice(0, 3)
         .map((x, i) => `${i + 1}. ${x.label}（${x.score}点）`)
         .join("\n");
-    return `【キャリア比較ラボ 結果】\n\n■ 候補TOP3\n${top3}\n\n■ 傾向TOP3\n${traits3}`;
+    return `【キャリア比較ラボ 結果】\n\n航路タイプ: ${p.type.title}\n一言: ${p.type.comment}\n\n■ 候補TOP3\n${top3}\n\n■ 傾向TOP3\n${traits3}\n\nこれは診断結果ではなく、今の回答から見たキャリア仮説です。`;
   }
   function downloadText(filename, text) {
     let blob = new Blob([text], { type: "text/plain;charset=utf-8" }),
@@ -6572,7 +6886,7 @@
         .map((x, i) => `${i + 1}. ${x.label}（${x.score}点）`)
         .join("\n"),
       prompt = r.aiPrompt || r.ai_prompt || "";
-    return `キャリア比較ラボ 結果メモ（v2.1.0）\n作成日時: ${new Date(r.created_at || Date.now()).toLocaleString("ja-JP")}\n\n■ 候補TOP${TOP_N_DISPLAY}\n${candidates}\n\n■ 傾向TOP${insight.topTraits.length}\n${traits}\n\n■ AIプロンプト\n${prompt}\n`;
+    return `キャリア比較ラボ 結果メモ（v2.2.0）\n作成日時: ${new Date(r.created_at || Date.now()).toLocaleString("ja-JP")}\n\n■ 候補TOP${TOP_N_DISPLAY}\n${candidates}\n\n■ 傾向TOP${insight.topTraits.length}\n${traits}\n\n■ AIプロンプト\n${prompt}\n`;
   }
 
   // ==================================================================
